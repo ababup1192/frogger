@@ -5,12 +5,14 @@ mod FroggerScene {
 
     pub enum Child with Eq, ToString {
         case Player
+        case VehicleLanes
     }
 
     instance SceneTree.SceneChild[Child] {
         pub def sceneName(_c: Child): String = FroggerScene.rootName()
         pub def childName(c: Child): String = match c {
             case Child.Player => FroggerPlayer.playerName()
+            case Child.VehicleLanes => VehicleLane.containerName()
         }
     }
 
@@ -69,10 +71,8 @@ mod FroggerScene {
     // ========================================================================
 
     pub def buildInitialScene(): SceneTree.Node =
-        let board = buildBoard();
-        let player = FroggerPlayer.buildPlayer();
-        SceneTree.node2D(rootName(), Vec2D.zero(),
-            List.append(board, player :: Nil))
+        (buildBoard() ::: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: Nil)
+            |> SceneTree.node2D(rootName(), Vec2D.zero())
 
     // ========================================================================
     // Input Application — delegate to FroggerPlayer
@@ -86,5 +86,8 @@ mod FroggerScene {
     // ========================================================================
 
     pub def stepFrame(dt: Float32, state: Game.GameState): Game.GameState =
-        {scene = FroggerPlayer.stepFrame(dt, state#scene) | state}
+        {scene = state#scene
+            |> VehicleLane.stepFrame(dt)
+            |> FroggerPlayer.stepFrame(dt)
+        | state}
 }

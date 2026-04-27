@@ -23,6 +23,16 @@ https://doc.flix.dev/for-llms.html
 
 ここに書いてあるルールは決して破らないこと。
 
+## Flix コーディングスタイル
+- なるべく パイプスタイルを使い |> で 一時変数を作らないこと
+- インラインで書ける場合は、インラインで書いて、一時変数を作らないこと
+- |>で書きやすいように、レシーバとなる変数を最後の引数として、関数を作ること
+- パターンマッチがネストしないように、高階関数をなるべく利用すること
+- map, flatMap などが続いたら、forMが使えないか検討すること
+- map, filter などが続いたら、filterMap等の関数が変えないか検討すること
+- Randomは、JavaのAPIを使わず Math.Random, Math.Shuffleを使う。うまくいかない場合は、RandomUtilを拡張
+- ファイル操作は、[Fs](https://api.flix.dev/Fs.html), [BufReader](https://api.flix.dev/BufReader.html) を検討
+
 ## Flix 0.71.0 固有の注意点（公式ドキュメントに載っていない）
 
 ### Channel API
@@ -75,6 +85,11 @@ def testFoo(): Unit \ Assert =
 4. Flix から `import mypkg.MyClass` で利用
 
 ## ゲームエンジン開発のお作法
+
+### コーディングスタイル
+- 無駄な実装(特に座標系)をしてしまわないように、状況に適したNodeの種類を選び、使ってください。
+- SceneTree.Node.MkNode は、手動でNodeを作るので、最終手段です。既存のNodeをなるべく使ってください。
+- 実装が複雑になっている場合は、ゲームエンジンが拡張できないか考え、提案してください。
 
 ### Game ファイルの責務
 - ゲーム全体の状態定義（`GameState` 等）とメインループを持つ

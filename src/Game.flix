@@ -30,6 +30,11 @@ mod Game {
     pub def textureManifest(): List[Engine.TextureEntry] =
         {name = "white", path = "textures/white_1x1.png", hasAlpha = true} ::
         {name = "FroggerIdle", path = "textures/FroggerIdle.png", hasAlpha = true} ::
+        {name = "Car1", path = "textures/Car1.png", hasAlpha = true} ::
+        {name = "Car2", path = "textures/Car2.png", hasAlpha = true} ::
+        {name = "Car3", path = "textures/Car3.png", hasAlpha = true} ::
+        {name = "Car4", path = "textures/Car4.png", hasAlpha = true} ::
+        {name = "Car5", path = "textures/Car5.png", hasAlpha = true} ::
         Nil
 
     // ========================================================================
