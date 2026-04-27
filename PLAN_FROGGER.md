@@ -122,13 +122,13 @@ isJustPressed(key) = isKeyPressed(key) AND NOT prevKeys.contains(key)
 
 ---
 
-### - [ ] Phase 3: プレイヤー（グリッド移動）
-- [ ] `FroggerPlayer.flix` を作成
-- [ ] 単発入力検出ロジック (`GameState` に `prevKeys: Set[Engine.Key]` 追加)
-- [ ] カエルスプライトの表示（FroggerIdle.png）
-- [ ] グリッド移動: 1回のキー入力で 64px 移動（lerp 補間）
-- [ ] 画面端のクランプ（ボード外に出られない）
-- [ ] `flix run` でカエルが上下左右にホップする
+### - [x] Phase 3: プレイヤー（グリッド移動）
+- [x] `FroggerPlayer.flix` を作成
+- [x] 単発入力検出ロジック (`GameState` に `prevKeys: Set[Engine.Key]` 追加)
+- [x] カエルスプライトの表示（FroggerIdle.png）
+- [x] グリッド移動: 1回のキー入力で 64px 移動（lerp 補間）
+- [x] 画面端のクランプ（ボード外に出られない）
+- [x] `flix run` でカエルが上下左右にホップする
 
 **確認ポイント**: WASD/矢印でグリッド単位の移動。端で止まる
 
