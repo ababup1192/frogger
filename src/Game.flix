@@ -40,6 +40,7 @@ mod Game {
         {name = "LogStart", path = "textures/LogStart.png", hasAlpha = true} ::
         {name = "LogMiddle", path = "textures/LogMiddle.png", hasAlpha = true} ::
         {name = "LogEnd", path = "textures/LogEnd.png", hasAlpha = true} ::
+        {name = "Turtle", path = "textures/Turtle_01.png", hasAlpha = true} ::
         Nil
 
     // ========================================================================

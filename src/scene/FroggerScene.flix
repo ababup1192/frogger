@@ -7,6 +7,7 @@ mod FroggerScene {
         case Player
         case VehicleLanes
         case WaterLanes
+        case TurtleLanes
         case DeathTimer
     }
 
@@ -16,6 +17,7 @@ mod FroggerScene {
             case Child.Player => FroggerPlayer.playerName()
             case Child.VehicleLanes => VehicleLane.containerName()
             case Child.WaterLanes => WaterLane.containerName()
+            case Child.TurtleLanes => TurtleLane.containerName()
             case Child.DeathTimer => FroggerScene.deathTimerName()
         }
     }
@@ -87,7 +89,7 @@ mod FroggerScene {
 
     pub def buildInitialScene(): SceneTree.Node =
         let deathTimer = Timer2D.init({name = deathTimerName(), waitTime = deathTimerWait(), oneShot = true});
-        (buildBoard() ::: WaterLane.buildWaterLanes() :: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: deathTimer :: Nil)
+        (buildBoard() ::: WaterLane.buildWaterLanes() :: TurtleLane.buildTurtleLanes() :: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: deathTimer :: Nil)
             |> SceneTree.node2D(rootName(), Vec2D.zero())
 
     // ========================================================================
@@ -130,7 +132,8 @@ mod FroggerScene {
             };
             let wrappedScene = movedScene
                 |> VehicleLane.wrapVehicles
-                |> WaterLane.wrapLogs;
+                |> WaterLane.wrapLogs
+                |> TurtleLane.wrapTurtles;
             run {
                 let s = SceneTree.stepTimers(dt, wrappedScene);
                 {scene = s | state}
@@ -149,7 +152,7 @@ mod FroggerScene {
             let playerScene = FroggerPlayer.stepFrame(dt, state#scene);
             let collisionState = run {
                 let s = SceneTree.stepAndCollide(playerScene, dt, physicsConfig());
-                {scene = s |> VehicleLane.wrapVehicles |> WaterLane.wrapLogs | state}
+                {scene = s |> VehicleLane.wrapVehicles |> WaterLane.wrapLogs |> TurtleLane.wrapTurtles | state}
             } with handler SceneTree.OnCollision {
                 def bodyEntered(_name, _pos, _body, k) = k(())
                 def areaEntered(name, _pos, body, k) =
@@ -159,9 +162,18 @@ mod FroggerScene {
                         triggerDeath(st)
                     else st
             };
-            // Platform riding + water zone death check (delegated to WaterLane)
-            let ridingScene = WaterLane.applyPlatformRiding(dt, collisionState#scene);
-            if (WaterLane.shouldDrown(ridingScene) and not isPlayerDead(ridingScene))
+            // Platform riding (log or turtle) + water zone death check
+            let ridingScene = collisionState#scene
+                |> WaterLane.applyPlatformRiding(dt)
+                |> TurtleLane.applyPlatformRiding(dt);
+            let onLog = not Option.isEmpty(WaterLane.findOverlappingLogVelocity(ridingScene));
+            let onTurtle = not Option.isEmpty(TurtleLane.findOverlappingTurtleVelocity(ridingScene));
+            let inWater = SceneTree.globalPosition(FroggerPlayer.playerName(), ridingScene)
+                |> Option.map(pos -> WaterLane.isInWaterZone(pos#y))
+                |> Option.getWithDefault(false);
+            let atTarget = FroggerPlayer.isAtTarget(ridingScene);
+            let drown = (atTarget and inWater and not onLog and not onTurtle) or WaterLane.isPlayerOffScreen(ridingScene);
+            if (drown and not isPlayerDead(ridingScene))
                 triggerDeath({scene = ridingScene | collisionState})
             else {scene = ridingScene | collisionState}
         }

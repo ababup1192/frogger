@@ -4,8 +4,16 @@
 ## 環境
 
 - devbox shell で開発環境に入る（JDK 21 必須）
-- `flix run` / `flix test` / `flix build` で実行
 - bin/flix.jar は Flix 0.71.0（devbox には最新がないため手動ダウンロード）
+- コマンド実行は `devbox run -- java -jar bin/flix.jar <command>` の形式で行う
+
+```bash
+devbox run -- java -jar bin/flix.jar test
+devbox run -- java -jar bin/flix.jar run
+devbox run -- java -jar bin/flix.jar build
+```
+
+**注意**: `devbox run flix test` は対話REPLに入ってしまうので使わないこと
 
 ## Flix バージョン更新
 
@@ -16,8 +24,8 @@ curl -L -o bin/flix.jar https://github.com/flix/flix/releases/download/vX.XX.X/f
 ## 変更後の確認
 
 コード変更後は必ず以下を両方実行すること：
-1. `flix test` - テストが通ることを確認
-2. `flix run`  - 実際に動作することを確認
+1. `devbox run -- java -jar bin/flix.jar test` - テストが通ることを確認
+2. `devbox run -- java -jar bin/flix.jar run`  - 実際に動作することを確認
 
 ## Flix コーディングルール
 

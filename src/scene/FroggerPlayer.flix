@@ -83,6 +83,20 @@ mod FroggerPlayer {
             |> SceneTree.updateChildSprite(playerName(), sd -> {texture = "FroggerIdle" | sd})
 
     // ========================================================================
+    // Movement State Query
+    // ========================================================================
+
+    pub def isAtTarget(scene: SceneTree.Node): Bool =
+        match SceneTree.findNode(playerName(), scene) {
+            case Some(node) =>
+                match SceneTree.characterBodyData(node) {
+                    case Some(cbd) => Vec2D.isZeroApprox(Vec2D.sub(cbd#targetPos, SceneTree.nodePosition(node)))
+                    case None => true
+                }
+            case None => true
+        }
+
+    // ========================================================================
     // Frame Step — engine handles moveToward automatically
     // ========================================================================
 
