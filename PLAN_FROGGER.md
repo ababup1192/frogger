@@ -96,27 +96,27 @@ isJustPressed(key) = isKeyPressed(key) AND NOT prevKeys.contains(key)
 
 ## 作業フェーズ
 
-### - [ ] Phase 1: プロジェクトセットアップ
-- [ ] `/tmp/FroggerTutorial/Assets/` からゲーム用スプライトを `textures/` にコピー
-- [ ] `Game.flix` を書き替え: 画面サイズ (784x1000)、テクスチャマニフェスト、オーディオマニフェスト（空でOK）
-- [ ] 旧ゲーム用シーンファイル (`MainScene.flix`, `PlayerScene.flix`, `MobScene.flix`, `HUDScene.flix`) を削除
-- [ ] `FroggerScene.flix` を作成: 空のルートノードだけ返す最小シーン
-- [ ] 旧テスト (`test/*.flix`) のうちシーン依存のものを削除/コメントアウト
-- [ ] `flix test` が通ることを確認
-- [ ] `flix run` でウィンドウが開くことを確認
+### - [x] Phase 1: プロジェクトセットアップ
+- [x] `/tmp/FroggerTutorial/Assets/` からゲーム用スプライトを `textures/` にコピー
+- [x] `Game.flix` を書き替え: 画面サイズ (784x1000)、テクスチャマニフェスト、オーディオマニフェスト（空でOK）
+- [x] 旧ゲーム用シーンファイル (`MainScene.flix`, `PlayerScene.flix`, `MobScene.flix`, `HUDScene.flix`) を削除
+- [x] `FroggerScene.flix` を作成: 空のルートノードだけ返す最小シーン
+- [x] 旧テスト (`test/*.flix`) のうちシーン依存のものを削除/コメントアウト
+- [x] `flix test` が通ることを確認
+- [x] `flix run` でウィンドウが開くことを確認
 
 **確認ポイント**: 正しいサイズの空ウィンドウが表示される
 
 ---
 
-### - [ ] Phase 2: ゲームボード（静的背景）
-- [ ] レイアウト定数を定義（各ゾーンの Y 座標、レーン数、セルサイズ等）
-- [ ] 背景ゾーンを色付き矩形で描画:
+### - [x] Phase 2: ゲームボード（静的背景）
+- [x] レイアウト定数を定義（各ゾーンの Y 座標、レーン数、セルサイズ等）
+- [x] 背景ゾーンを色付き矩形で描画:
   - 水域 = 青 (`{r=0.0, g=0.2, b=0.6}`)
   - 道路 = 暗灰 (`{r=0.15, g=0.15, b=0.15}`)
   - 歩道 = 緑 (`{r=0.2, g=0.5, b=0.2}`)
   - ホーム = 緑
-- [ ] `flix run` で色分けされたゲームボードが表示される
+- [x] `flix run` で色分けされたゲームボードが表示される
 
 **確認ポイント**: 上からホーム(緑)→水域(青)→歩道(緑)→道路(灰)→歩道(緑) のレイアウト
 
