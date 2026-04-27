@@ -74,3 +74,15 @@ def testFoo(): Unit \ Assert =
 3. `flix.toml` の `[jar-dependencies]` に `"xxx.jar" = "url:file://local"` を追加
 4. Flix から `import mypkg.MyClass` で利用
 
+## ゲームエンジン開発のお作法
+
+### Game ファイルの責務
+- ゲーム全体の状態定義（`GameState` 等）とメインループを持つ
+- 入力のポーリング・エッジ検出を行い、Scene に渡す
+- Scene の構築・入力適用・フレーム更新を呼び出す **オーケストレーター**
+- ゲーム固有のロジック（移動計算等）はSceneに委譲する
+
+### Scene ファイルの責務
+- シーンが管理する子ノードを`SceneTree.SceneChild`で定義する
+- シーンの初期構築（`buildInitialScene` 相当）を提供する
+- 親子関係があるSceneでは、責務を決め、親は子の呼び出し委譲をするオーケストレーターに徹する

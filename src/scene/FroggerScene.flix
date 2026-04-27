@@ -3,6 +3,20 @@
 mod FroggerScene {
     pub def rootName(): String = "Root"
 
+    pub enum Child with Eq, ToString {
+        case Player
+        case PlayerTarget
+    }
+
+    instance SceneTree.SceneChild[Child] {
+        pub def sceneName(_c: Child): String = FroggerScene.rootName()
+        pub def childName(c: Child): String = match c {
+            case Child.Player       => FroggerPlayer.playerName()
+            case Child.PlayerTarget => "PlayerTarget"
+        }
+    }
+
+
     // ========================================================================
     // Board Layout Constants
     // ========================================================================
@@ -57,5 +71,34 @@ mod FroggerScene {
     // ========================================================================
 
     pub def buildInitialScene(): SceneTree.Node =
-        SceneTree.node2D(rootName(), Vec2D.zero(), buildBoard())
+        let board = buildBoard();
+        let player = FroggerPlayer.buildPlayer();
+        let target = Marker2D.init({name = SceneTree.childName(Child.PlayerTarget), pos = FroggerPlayer.startPos()});
+        SceneTree.node2D(rootName(), Vec2D.zero(),
+            List.append(board, player :: target :: Nil))
+
+    // ========================================================================
+    // Input Application
+    // ========================================================================
+
+    pub def applyInput(dir: Option[SceneTree.Direction], scene: SceneTree.Node): SceneTree.Node =
+        let name = SceneTree.childName(Child.PlayerTarget);
+        match dir {
+            case Some(d) =>
+                let targetPos = SceneTree.globalPosition(name, scene)
+                    |> Option.getWithDefault(FroggerPlayer.startPos());
+                let newTarget = FroggerPlayer.computeNewTarget(d, targetPos);
+                SceneTree.setNodePosition(name, newTarget, scene)
+            case None => scene
+        }
+
+    // ========================================================================
+    // Frame Step
+    // ========================================================================
+
+    pub def stepFrame(dt: Float32, state: Game.GameState): Game.GameState =
+        let targetPos = SceneTree.globalPosition(SceneTree.childName(Child.PlayerTarget), state#scene)
+            |> Option.getWithDefault(FroggerPlayer.startPos());
+        let newScene = FroggerPlayer.stepPlayer(dt, targetPos, state#scene);
+        {scene = newScene | state}
 }
