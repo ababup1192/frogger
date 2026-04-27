@@ -1,9 +1,9 @@
-// Dodge the Creeps — tile-based game in Flix
+// Frogger — Flix game
 
 def main(): Unit \ IO =
     if (Engine.ensureMainThread()) ()
     else {
-        println("Dodge the Creeps");
+        println("Frogger");
         let config = Game.engineConfig();
         discard run {
             Game.startGame()

@@ -93,36 +93,3 @@ def testFindDataChunkNotFound(): Unit \ Assert =
     let result = AudioUtil.findDataChunkOffset(getByte, getInt, 12, 12);
     Assert.assertEq(expected = (None: Option[Int32]), result)
 
-// ========================================================================
-// Audio effect call order (MainScene integration)
-// ========================================================================
-
-def recordAudio(f: Unit -> a \ Engine.Audio): (a, List[String]) =
-    run {
-        let r = f();
-        (r, Nil)
-    } with handler Engine.Audio {
-        def playAudio(name, k) =
-            let (r, rest) = k(());
-            (r, "play:" ++ name :: rest)
-        def stopAudio(name, k) =
-            let (r, rest) = k(());
-            (r, "stop:" ++ name :: rest)
-    }
-
-@Test
-def testNewGamePlaysMusic(): Unit \ Assert =
-    let state = Game.initGame(0, 0);
-    let (_, calls) = recordAudio(() -> MainScene.newGame(state));
-    Assert.assertEq(expected = "play:music" :: Nil, calls)
-
-@Test
-def testGameOverStopsMusciThenPlaysDeath(): Unit \ Assert =
-    let state = Game.initGame(0, 0);
-    let active = run { MainScene.newGame(state) }
-        with handler Engine.Audio {
-            def playAudio(_name, k) = k(())
-            def stopAudio(_name, k) = k(())
-        };
-    let (_, calls) = recordAudio(() -> MainScene.gameOverState(active));
-    Assert.assertEq(expected = "stop:music" :: "play:death" :: Nil, calls)

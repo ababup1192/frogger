@@ -724,34 +724,6 @@ def testCheckShapeOverlapCircleCircleMiss(): Unit \ Assert =
         {x = 100.0f32, y = 0.0f32}, SceneTree.CollisionShapeData.CircleShape(10.0f32));
     Assert.assertFalse(result)
 
-// ========================================================================
-// Dodge the Creeps — Scene Tests
-// ========================================================================
-
-@Test
-def testMainSceneBuilds(): Unit \ Assert =
-    let scene = MainScene.buildInitialScene();
-    let playerNode = SceneTree.findNode("Player", scene);
-    Assert.assertTrue(not Option.isEmpty(playerNode))
-
-@Test
-def testPlayerStartsAtStartPosition(): Unit \ Assert =
-    let scene = MainScene.buildInitialScene();
-    let pos = SceneTree.globalPosition("Player", scene) |> Option.getWithDefault(Vec2D.zero());
-    Assert.assertEq(expected = 240.0f32, pos#x);
-    Assert.assertEq(expected = 450.0f32, pos#y)
-
-@Test
-def testPlayerHasAnimatedSprite(): Unit \ Assert =
-    let scene = MainScene.buildInitialScene();
-    let spriteNode = SceneTree.findChild(PlayerScene.Child.Sprite, scene);
-    Assert.assertTrue(not Option.isEmpty(spriteNode))
-
-@Test
-def testPlayerHasCollisionShape(): Unit \ Assert =
-    let scene = MainScene.buildInitialScene();
-    let shapeNode = SceneTree.findChild(PlayerScene.Child.Shape, scene);
-    Assert.assertTrue(not Option.isEmpty(shapeNode))
 
 @Test
 def testNamedAnimationStepAdvancesFrame(): Unit \ Assert =
@@ -941,11 +913,3 @@ def testMapNodeInModifiesCorrectChild(): Unit \ Assert =
         |> Option.map(p -> p#x);
     Assert.assertEq(expected = Some(20.0f32), posB)
 
-@Test
-def testFindChildTrait(): Unit \ Assert =
-    // findChild via SceneChild trait on PlayerScene.Child
-    let scene = MainScene.buildInitialScene();
-    let spriteNode = SceneTree.findChild(PlayerScene.Child.Sprite, scene);
-    Assert.assertTrue(not Option.isEmpty(spriteNode));
-    let shapeNode = SceneTree.findChild(PlayerScene.Child.Shape, scene);
-    Assert.assertTrue(not Option.isEmpty(shapeNode))
