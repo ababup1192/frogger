@@ -27,6 +27,7 @@ mod Game {
     // ========================================================================
 
     pub def textureManifest(): List[Engine.TextureEntry] =
+        {name = "white", path = "textures/white_1x1.png", hasAlpha = true} ::
         {name = "FroggerIdle", path = "textures/FroggerIdle.png", hasAlpha = true} ::
         Nil
 

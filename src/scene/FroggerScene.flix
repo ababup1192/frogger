@@ -3,6 +3,59 @@
 mod FroggerScene {
     pub def rootName(): String = "Root"
 
+    // ========================================================================
+    // Board Layout Constants
+    // ========================================================================
+
+    def screenW(): Float32 = Int32.toFloat32(Game.screenWidth())
+
+    def homeZoneY(): Float32      = 0.0f32
+    def homeZoneH(): Float32      = 64.0f32
+
+    def waterZoneY(): Float32     = 64.0f32
+    def waterZoneH(): Float32     = 384.0f32
+
+    def medianZoneY(): Float32    = 448.0f32
+    def medianZoneH(): Float32    = 64.0f32
+
+    def roadZoneY(): Float32      = 512.0f32
+    def roadZoneH(): Float32      = 320.0f32
+
+    def startZoneY(): Float32     = 832.0f32
+    def startZoneH(): Float32     = 64.0f32
+
+    // ========================================================================
+    // Zone Colors
+    // ========================================================================
+
+    def greenColor(): Engine.Color  = {r = 0.2f32, g = 0.5f32, b = 0.2f32}
+    def blueColor(): Engine.Color   = {r = 0.0f32, g = 0.2f32, b = 0.6f32}
+    def darkGrayColor(): Engine.Color = {r = 0.15f32, g = 0.15f32, b = 0.15f32}
+
+    // ========================================================================
+    // Helpers
+    // ========================================================================
+
+    def coloredRect(name: String, y: Float32, h: Float32, col: Engine.Color): SceneTree.Node =
+        Sprite2D.init({name = name, pos = {x = 0.0f32, y = y}, size = {x = screenW(), y = h}, texture = "white"})
+            |> Sprite2D.color(col)
+
+    // ========================================================================
+    // Board Builder
+    // ========================================================================
+
+    pub def buildBoard(): List[SceneTree.Node] =
+        coloredRect("HomeZone",   homeZoneY(),   homeZoneH(),   greenColor()) ::
+        coloredRect("WaterZone",  waterZoneY(),  waterZoneH(),  blueColor()) ::
+        coloredRect("MedianZone", medianZoneY(), medianZoneH(), greenColor()) ::
+        coloredRect("RoadZone",   roadZoneY(),   roadZoneH(),   darkGrayColor()) ::
+        coloredRect("StartZone",  startZoneY(),  startZoneH(),  greenColor()) ::
+        Nil
+
+    // ========================================================================
+    // Scene Construction
+    // ========================================================================
+
     pub def buildInitialScene(): SceneTree.Node =
-        SceneTree.node2D(rootName(), Vec2D.zero(), Nil)
+        SceneTree.node2D(rootName(), Vec2D.zero(), buildBoard())
 }
