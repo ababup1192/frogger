@@ -37,6 +37,9 @@ mod Game {
         {name = "Car4", path = "textures/Car4.png", hasAlpha = true} ::
         {name = "Car5", path = "textures/Car5.png", hasAlpha = true} ::
         {name = "FroggerDead", path = "textures/FroggerDead.png", hasAlpha = true} ::
+        {name = "LogStart", path = "textures/LogStart.png", hasAlpha = true} ::
+        {name = "LogMiddle", path = "textures/LogMiddle.png", hasAlpha = true} ::
+        {name = "LogEnd", path = "textures/LogEnd.png", hasAlpha = true} ::
         Nil
 
     // ========================================================================

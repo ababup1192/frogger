@@ -145,12 +145,12 @@ isJustPressed(key) = isKeyPressed(key) AND NOT prevKeys.contains(key)
 
 ---
 
-### - [ ] Phase 5: 車との衝突 & 死亡
-- [ ] プレイヤー (Area2D) と車 (Area2D) の衝突判定
-- [ ] 衝突時: 死亡スプライト (FroggerDead.png) 表示 → 一定時間後リスポーン
-- [ ] ライフシステム（`GameState` に `lives: Int32` 追加）
-- [ ] ライフ 0 でゲームオーバー
-- [ ] `flix run` で車に轢かれて死亡→リスポーンが動作する
+### - [x] Phase 5: 車との衝突 & 死亡
+- [x] プレイヤー (Area2D) と車 (Area2D) の衝突判定
+- [x] 衝突時: 死亡スプライト (FroggerDead.png) 表示 → 一定時間後リスポーン
+- [x] ライフシステム（`GameState` に `lives: Int32` 追加）
+- [x] ライフ 0 でゲームオーバー
+- [x] `flix run` で車に轢かれて死亡→リスポーンが動作する
 
 **確認ポイント**: 車にぶつかると死亡、リスポーン後に再プレイ可能
 

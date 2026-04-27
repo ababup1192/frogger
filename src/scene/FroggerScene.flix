@@ -6,6 +6,7 @@ mod FroggerScene {
     pub enum Child with Eq, ToString {
         case Player
         case VehicleLanes
+        case WaterLanes
         case DeathTimer
     }
 
@@ -14,6 +15,7 @@ mod FroggerScene {
         pub def childName(c: Child): String = match c {
             case Child.Player => FroggerPlayer.playerName()
             case Child.VehicleLanes => VehicleLane.containerName()
+            case Child.WaterLanes => WaterLane.containerName()
             case Child.DeathTimer => FroggerScene.deathTimerName()
         }
     }
@@ -85,7 +87,7 @@ mod FroggerScene {
 
     pub def buildInitialScene(): SceneTree.Node =
         let deathTimer = Timer2D.init({name = deathTimerName(), waitTime = deathTimerWait(), oneShot = true});
-        (buildBoard() ::: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: deathTimer :: Nil)
+        (buildBoard() ::: WaterLane.buildWaterLanes() :: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: deathTimer :: Nil)
             |> SceneTree.node2D(rootName(), Vec2D.zero())
 
     // ========================================================================
@@ -103,20 +105,32 @@ mod FroggerScene {
         SceneTree.isTimerRunning(SceneTree.childName(Child.DeathTimer), scene)
 
     // ========================================================================
+    // Death Trigger — shared helper for vehicle collision and drowning
+    // ========================================================================
+
+    def triggerDeath(state: Game.GameState): Game.GameState =
+        {scene = state#scene
+            |> FroggerPlayer.showDeathSprite
+            |> SceneTree.startTimer(SceneTree.childName(Child.DeathTimer)),
+         lives = state#lives - 1 | state}
+
+    // ========================================================================
     // Frame Step — physics (stepAndCollide) + OnCollision + OnTimeout
     // ========================================================================
 
     pub def stepFrame(dt: Float32, state: Game.GameState): Game.GameState =
         let hitboxName = SceneTree.childName(FroggerPlayer.Child.Hitbox);
         if (isPlayerDead(state#scene)) {
-            // Death active: move vehicles via physics, step timer, handle timeout
+            // Death active: move vehicles/logs via physics, step timer, handle timeout
             let movedScene = run {
                 SceneTree.stepAndCollide(state#scene, dt, physicsConfig())
             } with handler SceneTree.OnCollision {
                 def bodyEntered(_name, _pos, _body, k) = k(())
                 def areaEntered(_name, _pos, _body, k) = k(())
             };
-            let wrappedScene = VehicleLane.wrapVehicles(movedScene);
+            let wrappedScene = movedScene
+                |> VehicleLane.wrapVehicles
+                |> WaterLane.wrapLogs;
             run {
                 let s = SceneTree.stepTimers(dt, wrappedScene);
                 {scene = s | state}
@@ -133,19 +147,22 @@ mod FroggerScene {
         } else {
             // Normal: move player, then physics step with collision detection
             let playerScene = FroggerPlayer.stepFrame(dt, state#scene);
-            run {
+            let collisionState = run {
                 let s = SceneTree.stepAndCollide(playerScene, dt, physicsConfig());
-                {scene = VehicleLane.wrapVehicles(s) | state}
+                {scene = s |> VehicleLane.wrapVehicles |> WaterLane.wrapLogs | state}
             } with handler SceneTree.OnCollision {
                 def bodyEntered(_name, _pos, _body, k) = k(())
-                def areaEntered(name, _pos, _body, k) =
+                def areaEntered(name, _pos, body, k) =
                     let st = k(());
-                    if (name == hitboxName and not isPlayerDead(st#scene))
-                        {scene = st#scene
-                            |> FroggerPlayer.showDeathSprite
-                            |> SceneTree.startTimer(SceneTree.childName(Child.DeathTimer)),
-                         lives = st#lives - 1 | st}
+                    if (name == hitboxName and not isPlayerDead(st#scene) and
+                        String.startsWith({prefix = "V"}, body#name))
+                        triggerDeath(st)
                     else st
-            }
+            };
+            // Platform riding + water zone death check (delegated to WaterLane)
+            let ridingScene = WaterLane.applyPlatformRiding(dt, collisionState#scene);
+            if (WaterLane.shouldDrown(ridingScene) and not isPlayerDead(ridingScene))
+                triggerDeath({scene = ridingScene | collisionState})
+            else {scene = ridingScene | collisionState}
         }
 }
