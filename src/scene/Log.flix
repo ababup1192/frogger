@@ -42,7 +42,7 @@ mod Log {
     /// 丸太ノードを構築（Area2D + Start/Middle/End Sprites + CollisionShape）
     pub def build(name: String, pos: Vec2D.Vec2, segments: Int32): SceneTree.Node =
         let sprites = buildSprites(segments);
-        let shape = Shape2D.rect({name = "Shape", size = size(segments)});
+        let shape = RectShape2D.init({name = "Shape", size = size(segments)});
         Area2D.init({name = name, pos = pos,
                      children = List.append(sprites, shape :: Nil)})
 }

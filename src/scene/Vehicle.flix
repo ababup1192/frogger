@@ -10,6 +10,6 @@ mod Vehicle {
     pub def build(name: String, pos: Vec2D.Vec2, texture: String): SceneTree.Node =
         let sprite = Sprite2D.init({name = spriteName(), pos = Vec2D.zero(),
                                     size = size(), texture = texture});
-        let shape = Shape2D.rect({name = "Shape", size = size()});
+        let shape = RectShape2D.init({name = "Shape", size = size()});
         Area2D.init({name = name, pos = pos, children = sprite :: shape :: Nil})
 }

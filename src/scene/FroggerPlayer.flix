@@ -54,7 +54,7 @@ mod FroggerPlayer {
                                             animations = playerAnimations(),
                                             initialAnimation = "idle"})
             |> AnimatedSprite2D.fps(4.0f32);
-        let hitboxShape = Shape2D.rect({name = "Shape", size = playerHitboxSize()});
+        let hitboxShape = RectShape2D.init({name = "Shape", size = playerHitboxSize()});
         let hitbox = Area2D.init({name = SceneTree.childName(Child.Hitbox),
                                   pos = playerHitboxOffset(),
                                   children = hitboxShape :: Nil});

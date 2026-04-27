@@ -492,16 +492,28 @@ mod CanvasLayer2D {
 }
 
 // ========================================================================
-// Shape2D — collision shape builders
+// RectShape2D
 // ========================================================================
 
-mod Shape2D {
-    pub def rect(req: {name = String, size = Vec2D.Vec2}): SceneTree.Node =
+mod RectShape2D {
+    pub def init(req: {name = String, size = Vec2D.Vec2}): SceneTree.Node =
         SceneTree.collisionShape2D(req#name, SceneTree.CollisionShapeData.RectShape(req#size))
+}
 
-    pub def circle(req: {name = String, radius = Float32}): SceneTree.Node =
+// ========================================================================
+// CircleShape2D
+// ========================================================================
+
+mod CircleShape2D {
+    pub def init(req: {name = String, radius = Float32}): SceneTree.Node =
         SceneTree.collisionShape2D(req#name, SceneTree.CollisionShapeData.CircleShape(req#radius))
+}
 
-    pub def capsule(req: {name = String, radius = Float32, height = Float32}): SceneTree.Node =
+// ========================================================================
+// CapsuleShape2D
+// ========================================================================
+
+mod CapsuleShape2D {
+    pub def init(req: {name = String, radius = Float32, height = Float32}): SceneTree.Node =
         SceneTree.collisionShape2D(req#name, SceneTree.CollisionShapeData.CapsuleShape(req#radius, req#height))
 }
