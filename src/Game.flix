@@ -101,8 +101,11 @@ mod Game {
 
     def processInput(state: GameState): GameState \ Engine.Game =
         let currKeys = collectPressedKeys();
-        let dir = inputDirection(justPressedKeys(currKeys, state#prevKeys));
-        {scene = FroggerScene.applyInput(dir, state#scene), prevKeys = currKeys | state}
+        let justPressed = justPressedKeys(currKeys, state#prevKeys);
+        {scene = match inputDirection(justPressed) {
+            case Some(dir) => FroggerScene.applyInput(dir, state#scene)
+            case None      => state#scene
+        }, prevKeys = currKeys | state}
 
     pub def updateGame(state: GameState): GameState \ Engine.Game =
         (if (not state#gameOver) processInput(state) else state) |>

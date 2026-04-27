@@ -16,12 +16,14 @@ def testBoardZonePositions(): Unit \ Assert =
     Assert.assertEq(expected = 0.0f32 :: 64.0f32 :: 448.0f32 :: 512.0f32 :: 832.0f32 :: Nil, ys)
 
 @Test
-def testInitialSceneHasPlayerTarget(): Unit \ Assert =
+def testInitialSceneHasPlayerWithTargetPos(): Unit \ Assert =
     let scene = FroggerScene.buildInitialScene();
-    match SceneTree.findNode("PlayerTarget", scene) {
-        case Some(node) =>
-            let pos = SceneTree.nodePosition(node);
-            Assert.assertEq(expected = 384.0f32, pos#x);
-            Assert.assertEq(expected = 832.0f32, pos#y)
+    match SceneTree.findNode("Player", scene) {
+        case Some(player) => match SceneTree.characterBodyData(player) {
+            case Some(cbd) =>
+                Assert.assertEq(expected = 384.0f32, cbd#targetPos#x);
+                Assert.assertEq(expected = 832.0f32, cbd#targetPos#y)
+            case None => Assert.assertTrue(false)
+        }
         case None => Assert.assertTrue(false)
     }

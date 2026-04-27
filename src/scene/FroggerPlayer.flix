@@ -37,7 +37,8 @@ mod FroggerPlayer {
         let sprite = Sprite2D.init({name = SceneTree.childName(Child.Sprite), pos = Vec2D.zero(),
                                     size = {x = cellSize(), y = cellSize()},
                                     texture = "FroggerIdle"});
-        SceneTree.node2D(playerName(), startPos(), sprite :: Nil)
+        CharacterBody2D.init({name = playerName(), pos = startPos(), children = sprite :: Nil})
+            |> CharacterBody2D.moveSpeed(moveSpeed())
 
     // ========================================================================
     // Movement — Compute New Target (pure)
@@ -49,12 +50,17 @@ mod FroggerPlayer {
         Vec2D.clamp(raw, minBound(), maxBound())
 
     // ========================================================================
-    // Movement — Step Player (lerp toward target, pure)
+    // Input Application — update targetPos on CharacterBody
     // ========================================================================
 
-    pub def stepPlayer(dt: Float32, targetPos: Vec2D.Vec2, scene: SceneTree.Node): SceneTree.Node =
-        let currentPos = SceneTree.globalPosition(playerName(), scene)
-            |> Option.getWithDefault(startPos());
-        let leapedPos = Vec2D.moveToward(currentPos, targetPos, moveSpeed() * dt);
-        SceneTree.setNodePosition(playerName(), leapedPos, scene)
+    pub def applyInput(dir: SceneTree.Direction, scene: SceneTree.Node): SceneTree.Node =
+        SceneTree.updateCharacterBody(playerName(), cbd ->
+            {targetPos = computeNewTarget(dir, cbd#targetPos) | cbd}, scene)
+
+    // ========================================================================
+    // Frame Step — engine handles moveToward automatically
+    // ========================================================================
+
+    pub def stepFrame(dt: Float32, scene: SceneTree.Node): SceneTree.Node =
+        SceneTree.stepCharacterBodies(dt, scene)
 }

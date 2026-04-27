@@ -5,10 +5,10 @@
 // ========================================================================
 
 @Test
-def testPlayerIsNode2D(): Unit \ Assert =
+def testPlayerIsCharacterBody(): Unit \ Assert =
     let player = FroggerPlayer.buildPlayer();
     match SceneTree.nodeKind(player) {
-        case SceneTree.NodeKind.Plain => Assert.assertTrue(true)
+        case SceneTree.NodeKind.Character(_) => Assert.assertTrue(true)
         case _ => Assert.assertTrue(false)
     }
 
@@ -23,6 +23,24 @@ def testPlayerPosition(): Unit \ Assert =
     let pos = SceneTree.nodePosition(player);
     Assert.assertEq(expected = 384.0f32, pos#x);
     Assert.assertEq(expected = 832.0f32, pos#y)
+
+@Test
+def testPlayerMoveSpeed(): Unit \ Assert =
+    let player = FroggerPlayer.buildPlayer();
+    match SceneTree.characterBodyData(player) {
+        case Some(cbd) => Assert.assertEq(expected = 512.0f32, cbd#moveSpeed)
+        case None => Assert.assertTrue(false)
+    }
+
+@Test
+def testPlayerInitialTargetPos(): Unit \ Assert =
+    let player = FroggerPlayer.buildPlayer();
+    match SceneTree.characterBodyData(player) {
+        case Some(cbd) =>
+            Assert.assertEq(expected = 384.0f32, cbd#targetPos#x);
+            Assert.assertEq(expected = 832.0f32, cbd#targetPos#y)
+        case None => Assert.assertTrue(false)
+    }
 
 @Test
 def testPlayerSpriteChildName(): Unit \ Assert =
@@ -106,17 +124,18 @@ def testComputeNewTargetClampRight(): Unit \ Assert =
     Assert.assertEq(expected = 720.0f32, result#x)
 
 // ========================================================================
-// stepPlayer Tests
+// stepFrame Tests
 // ========================================================================
 
 @Test
-def testStepPlayerLerpIntermediate(): Unit \ Assert =
+def testStepFrameLerpIntermediate(): Unit \ Assert =
     let player = FroggerPlayer.buildPlayer();
     let scene = SceneTree.node2D("Root", Vec2D.zero(), player :: Nil);
-    let target = {x = 384.0f32, y = 768.0f32};
+    // Move target up by one cell (64px) via applyInput
+    let sceneWithTarget = FroggerPlayer.applyInput(SceneTree.Direction.Up, scene);
     // delta = 512 * 0.0625 = 32, distance = 64, so moves halfway
     let dt = 0.0625f32;
-    let newScene = FroggerPlayer.stepPlayer(dt, target, scene);
+    let newScene = FroggerPlayer.stepFrame(dt, sceneWithTarget);
     match SceneTree.globalPosition("Player", newScene) {
         case Some(pos) =>
             Assert.assertEq(expected = 384.0f32, pos#x);
@@ -125,13 +144,14 @@ def testStepPlayerLerpIntermediate(): Unit \ Assert =
     }
 
 @Test
-def testStepPlayerArrival(): Unit \ Assert =
+def testStepFrameArrival(): Unit \ Assert =
     let player = FroggerPlayer.buildPlayer();
     let scene = SceneTree.node2D("Root", Vec2D.zero(), player :: Nil);
-    let target = {x = 384.0f32, y = 768.0f32};
+    // Move target up by one cell (64px) via applyInput
+    let sceneWithTarget = FroggerPlayer.applyInput(SceneTree.Direction.Up, scene);
     // delta = 512 * 1.0 = 512, distance = 64, player reaches target
     let dt = 1.0f32;
-    let newScene = FroggerPlayer.stepPlayer(dt, target, scene);
+    let newScene = FroggerPlayer.stepFrame(dt, sceneWithTarget);
     match SceneTree.globalPosition("Player", newScene) {
         case Some(pos) =>
             Assert.assertEq(expected = 384.0f32, pos#x);
@@ -149,14 +169,6 @@ def testInitialSceneContainsPlayer(): Unit \ Assert =
     match SceneTree.findNode("Player", scene) {
         case Some(player) => Assert.assertEq(expected = "Player", SceneTree.nodeName(player))
         case None         => Assert.assertTrue(false)
-    }
-
-@Test
-def testInitialSceneContainsPlayerTarget(): Unit \ Assert =
-    let scene = FroggerScene.buildInitialScene();
-    match SceneTree.findNode("PlayerTarget", scene) {
-        case Some(node) => Assert.assertEq(expected = "PlayerTarget", SceneTree.nodeName(node))
-        case None       => Assert.assertTrue(false)
     }
 
 // ========================================================================
