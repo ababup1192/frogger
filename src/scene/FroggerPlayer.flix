@@ -35,6 +35,10 @@ mod FroggerPlayer {
 
     pub def playerHitboxOffset(): Vec2D.Vec2 = {x = 8.0f32, y = 14.0f32}
 
+    /// プレイヤーのスプライト中心座標を返す（プラットフォーム乗り判定用）
+    pub def playerCenter(pos: Vec2D.Vec2): Vec2D.Vec2 =
+        {x = pos#x + cellSize() / 2.0f32, y = pos#y + cellSize() / 2.0f32}
+
     // ========================================================================
     // Node Builder
     // ========================================================================

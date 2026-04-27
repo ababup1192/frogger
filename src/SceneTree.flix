@@ -842,6 +842,11 @@ mod SceneTree {
         (posA#x + sizeA#x > posB#x) and (posA#x < posB#x + sizeB#x) and
         (posA#y + sizeA#y > posB#y) and (posA#y < posB#y + sizeB#y)
 
+    /// 点が矩形内にあるかを判定する（プラットフォーム乗り判定用）
+    pub def checkPointInRect(point: Vec2D.Vec2, rectPos: Vec2D.Vec2, rectSize: Vec2D.Vec2): Bool =
+        point#x >= rectPos#x and point#x < rectPos#x + rectSize#x and
+        point#y >= rectPos#y and point#y < rectPos#y + rectSize#y
+
     def capsuleToRect(radius: Float32, height: Float32): Vec2D.Vec2 =
         {x = 2.0f32 * radius, y = height}
 

@@ -139,38 +139,32 @@ mod WaterLane {
     // ========================================================================
 
     pub def findOverlappingLogVelocity(scene: SceneTree.Node): Option[Vec2D.Vec2] =
-        match SceneTree.globalPosition(FroggerPlayer.playerName(), scene) {
-            case None => None
-            case Some(playerPos) =>
-                let hitboxPos = Vec2D.add(playerPos, FroggerPlayer.playerHitboxOffset());
-                let hitboxSize = FroggerPlayer.playerHitboxSize();
-                findFirstOverlapping(hitboxPos, hitboxSize, laneConfigs(), scene)
-        }
+        SceneTree.globalPosition(FroggerPlayer.playerName(), scene)
+            |> Option.flatMap(playerPos ->
+                findFirstOverlapping(FroggerPlayer.playerCenter(playerPos), laneConfigs(), scene))
 
-    def findFirstOverlapping(hitboxPos: Vec2D.Vec2, hitboxSize: Vec2D.Vec2,
+    def findFirstOverlapping(center: Vec2D.Vec2,
                              configs: List[LogLaneConfig], scene: SceneTree.Node): Option[Vec2D.Vec2] =
         match configs {
             case Nil => None
             case cfg :: rest =>
-                match findOverlapInLane(hitboxPos, hitboxSize, cfg, scene) {
+                match findOverlapInLane(center, cfg, scene) {
                     case Some(vel) => Some(vel)
-                    case None => findFirstOverlapping(hitboxPos, hitboxSize, rest, scene)
+                    case None => findFirstOverlapping(center, rest, scene)
                 }
         }
 
-    def findOverlapInLane(hitboxPos: Vec2D.Vec2, hitboxSize: Vec2D.Vec2,
+    def findOverlapInLane(center: Vec2D.Vec2,
                           cfg: LogLaneConfig, scene: SceneTree.Node): Option[Vec2D.Vec2] =
         let logSz = Log.size(cfg#segments);
         let vel = {x = cfg#speed * cfg#direction, y = 0.0f32};
         List.range(0, cfg#logCount)
             |> List.findMap(i ->
-                match SceneTree.globalPosition(logName(cfg#laneIndex, i), scene) {
-                    case None => None
-                    case Some(logPos) =>
-                        if (SceneTree.checkRectRect(hitboxPos, hitboxSize, logPos, logSz))
+                SceneTree.globalPosition(logName(cfg#laneIndex, i), scene)
+                    |> Option.flatMap(logPos ->
+                        if (SceneTree.checkPointInRect(center, logPos, logSz))
                             Some(vel)
-                        else None
-                })
+                        else None))
 
     // ========================================================================
     // Apply platform riding — shift player pos + targetPos by log velocity * dt

@@ -127,38 +127,32 @@ mod TurtleLane {
     // ========================================================================
 
     pub def findOverlappingTurtleVelocity(scene: SceneTree.Node): Option[Vec2D.Vec2] =
-        match SceneTree.globalPosition(FroggerPlayer.playerName(), scene) {
-            case None => None
-            case Some(playerPos) =>
-                let hitboxPos = Vec2D.add(playerPos, FroggerPlayer.playerHitboxOffset());
-                let hitboxSize = FroggerPlayer.playerHitboxSize();
-                findFirstOverlapping(hitboxPos, hitboxSize, laneConfigs(), scene)
-        }
+        SceneTree.globalPosition(FroggerPlayer.playerName(), scene)
+            |> Option.flatMap(playerPos ->
+                findFirstOverlapping(FroggerPlayer.playerCenter(playerPos), laneConfigs(), scene))
 
-    def findFirstOverlapping(hitboxPos: Vec2D.Vec2, hitboxSize: Vec2D.Vec2,
+    def findFirstOverlapping(center: Vec2D.Vec2,
                              configs: List[TurtleLaneConfig], scene: SceneTree.Node): Option[Vec2D.Vec2] =
         match configs {
             case Nil => None
             case cfg :: rest =>
-                match findOverlapInLane(hitboxPos, hitboxSize, cfg, scene) {
+                match findOverlapInLane(center, cfg, scene) {
                     case Some(vel) => Some(vel)
-                    case None => findFirstOverlapping(hitboxPos, hitboxSize, rest, scene)
+                    case None => findFirstOverlapping(center, rest, scene)
                 }
         }
 
-    def findOverlapInLane(hitboxPos: Vec2D.Vec2, hitboxSize: Vec2D.Vec2,
+    def findOverlapInLane(center: Vec2D.Vec2,
                           cfg: TurtleLaneConfig, scene: SceneTree.Node): Option[Vec2D.Vec2] =
         let secSz = TurtleGroup.size(cfg#turtleCount);
         let vel = {x = cfg#speed * cfg#direction, y = 0.0f32};
         List.range(0, cfg#sectionCount)
             |> List.findMap(i ->
-                match SceneTree.globalPosition(sectionName(cfg#laneIndex, i), scene) {
-                    case None => None
-                    case Some(secPos) =>
-                        if (SceneTree.checkRectRect(hitboxPos, hitboxSize, secPos, secSz))
+                SceneTree.globalPosition(sectionName(cfg#laneIndex, i), scene)
+                    |> Option.flatMap(secPos ->
+                        if (SceneTree.checkPointInRect(center, secPos, secSz))
                             Some(vel)
-                        else None
-                })
+                        else None))
 
     // ========================================================================
     // Apply platform riding — shift player pos + targetPos by turtle velocity * dt
