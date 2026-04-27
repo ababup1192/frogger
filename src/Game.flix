@@ -2,10 +2,12 @@
 
 mod Game {
     pub type alias GameState = {
-        scene    = SceneTree.Node,
-        gameOver = Bool,
-        prevKeys = Set[Engine.Key],
-        lives    = Int32
+        scene           = SceneTree.Node,
+        gameOver        = Bool,
+        prevKeys        = Set[Engine.Key],
+        lives           = Int32,
+        homeSlotsFilled = Set[Int32],
+        won             = Bool
     }
 
     // ========================================================================
@@ -41,6 +43,8 @@ mod Game {
         {name = "LogMiddle", path = "textures/LogMiddle.png", hasAlpha = true} ::
         {name = "LogEnd", path = "textures/LogEnd.png", hasAlpha = true} ::
         {name = "Turtle", path = "textures/Turtle_01.png", hasAlpha = true} ::
+        {name = "Home", path = "textures/Home.png", hasAlpha = true} ::
+        {name = "HomeFrog", path = "textures/HomeFrog.png", hasAlpha = true} ::
         Nil
 
     // ========================================================================
@@ -104,7 +108,8 @@ mod Game {
 
     pub def initGame(): GameState =
         let scene = FroggerScene.buildInitialScene();
-        {scene = scene, gameOver = false, prevKeys = Set.empty(), lives = 3}
+        {scene = scene, gameOver = false, prevKeys = Set.empty(), lives = 3,
+         homeSlotsFilled = Set.empty(), won = false}
 
     // ========================================================================
     // Game Loop
@@ -123,7 +128,7 @@ mod Game {
         }
 
     pub def updateGame(state: GameState): GameState \ Engine.Game =
-        (if (not state#gameOver) processInput(state) else state) |>
+        (if (not state#gameOver and not state#won) processInput(state) else state) |>
             FroggerScene.stepFrame(Engine.Game.getDeltaTime())
 
     pub def startGame(): GameState \ Engine.Game =

@@ -8,6 +8,7 @@ mod FroggerScene {
         case VehicleLanes
         case WaterLanes
         case TurtleLanes
+        case HomeSlots
         case DeathTimer
     }
 
@@ -18,6 +19,7 @@ mod FroggerScene {
             case Child.VehicleLanes => VehicleLane.containerName()
             case Child.WaterLanes => WaterLane.containerName()
             case Child.TurtleLanes => TurtleLane.containerName()
+            case Child.HomeSlots => HomeSlot.containerName()
             case Child.DeathTimer => FroggerScene.deathTimerName()
         }
     }
@@ -89,7 +91,7 @@ mod FroggerScene {
 
     pub def buildInitialScene(): SceneTree.Node =
         let deathTimer = Timer2D.init({name = deathTimerName(), waitTime = deathTimerWait(), oneShot = true});
-        (buildBoard() ::: WaterLane.buildWaterLanes() :: TurtleLane.buildTurtleLanes() :: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: deathTimer :: Nil)
+        (buildBoard() ::: HomeSlot.buildHomeSlots() :: WaterLane.buildWaterLanes() :: TurtleLane.buildTurtleLanes() :: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: deathTimer :: Nil)
             |> SceneTree.node2D(rootName(), Vec2D.zero())
 
     // ========================================================================
@@ -115,6 +117,31 @@ mod FroggerScene {
             |> FroggerPlayer.showDeathSprite
             |> SceneTree.startTimer(SceneTree.childName(Child.DeathTimer)),
          lives = state#lives - 1 | state}
+
+    // ========================================================================
+    // Home Slot Check — player reached home zone
+    // ========================================================================
+
+    def checkHomeSlot(atTarget: Bool, playerPos: Option[Vec2D.Vec2],
+                      state: Game.GameState): Game.GameState =
+        match playerPos {
+            case None => state
+            case Some(pos) =>
+                if (not atTarget or not HomeSlot.isInHomeZone(pos#y)) state
+                else match HomeSlot.findSlotAtPosition(pos#x, state#homeSlotsFilled) {
+                    case Some(slotIdx) =>
+                        let newFilled = Set.insert(slotIdx, state#homeSlotsFilled);
+                        let filledScene = state#scene |> HomeSlot.fillSlot(slotIdx);
+                        let respawnedScene = FroggerPlayer.respawn(filledScene);
+                        if (HomeSlot.allFilled(newFilled))
+                            {scene = respawnedScene, homeSlotsFilled = newFilled, won = true | state}
+                        else
+                            {scene = respawnedScene, homeSlotsFilled = newFilled | state}
+                    case None =>
+                        // Home zone but no valid slot — death (hit wall between slots)
+                        triggerDeath(state)
+                }
+        }
 
     // ========================================================================
     // Frame Step — physics (stepAndCollide) + OnCollision + OnTimeout
@@ -168,13 +195,16 @@ mod FroggerScene {
                 |> TurtleLane.applyPlatformRiding(dt);
             let onLog = not Option.isEmpty(WaterLane.findOverlappingLogVelocity(ridingScene));
             let onTurtle = not Option.isEmpty(TurtleLane.findOverlappingTurtleVelocity(ridingScene));
-            let inWater = SceneTree.globalPosition(FroggerPlayer.playerName(), ridingScene)
+            let playerPos = SceneTree.globalPosition(FroggerPlayer.playerName(), ridingScene);
+            let inWater = playerPos
                 |> Option.map(pos -> WaterLane.isInWaterZone(pos#y))
                 |> Option.getWithDefault(false);
             let atTarget = FroggerPlayer.isAtTarget(ridingScene);
             let drown = (atTarget and inWater and not onLog and not onTurtle) or WaterLane.isPlayerOffScreen(ridingScene);
             if (drown and not isPlayerDead(ridingScene))
                 triggerDeath({scene = ridingScene | collisionState})
-            else {scene = ridingScene | collisionState}
+            else
+                // Home slot check — player reached home zone
+                checkHomeSlot(atTarget, playerPos, {scene = ridingScene | collisionState})
         }
 }
