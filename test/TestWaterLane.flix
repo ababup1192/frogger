@@ -37,17 +37,17 @@ def testLogLaneY3(): Unit \ Assert =
 @Test
 def testLogWidth0Segments(): Unit \ Assert =
     // segments=0: Start(64) + End(64) = 128
-    Assert.assertEq(expected = 128.0f32, WaterLane.logWidth(0))
+    Assert.assertEq(expected = 128.0f32, Log.width(0))
 
 @Test
 def testLogWidth1Segment(): Unit \ Assert =
     // segments=1: Start(64) + Middle(64) + End(64) = 192
-    Assert.assertEq(expected = 192.0f32, WaterLane.logWidth(1))
+    Assert.assertEq(expected = 192.0f32, Log.width(1))
 
 @Test
 def testLogWidth2Segments(): Unit \ Assert =
     // segments=2: Start(64) + Middle(128) + End(64) = 256
-    Assert.assertEq(expected = 256.0f32, WaterLane.logWidth(2))
+    Assert.assertEq(expected = 256.0f32, Log.width(2))
 
 // ========================================================================
 // buildWaterLanes structure tests
@@ -156,7 +156,7 @@ def testLogHasStartSprite(): Unit \ Assert =
         case Some(logNode) =>
             match SceneTree.findNode("SpriteStart", logNode) {
                 case Some(sprite) => match SceneTree.nodeKind(sprite) {
-                    case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "LogStart", sd#texture)
+                    case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "LogEnd", sd#texture)
                     case _ => bug!("SpriteStart should be Sprite")
                 }
                 case None => bug!("SpriteStart not found")
@@ -170,7 +170,7 @@ def testLogHasEndSprite(): Unit \ Assert =
         case Some(logNode) =>
             match SceneTree.findNode("SpriteEnd", logNode) {
                 case Some(sprite) => match SceneTree.nodeKind(sprite) {
-                    case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "LogEnd", sd#texture)
+                    case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "LogStart", sd#texture)
                     case _ => bug!("SpriteEnd should be Sprite")
                 }
                 case None => bug!("SpriteEnd not found")

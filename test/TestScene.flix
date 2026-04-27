@@ -6,7 +6,7 @@ use SceneTree.{collectDrawables,
 
 def mkSpriteData(tex: String): SceneTree.SpriteData =
     {size = {x = 10.0f32, y = 10.0f32}, color = {r = 1.0f32, g = 1.0f32, b = 1.0f32}, texture = tex, visible = true,
-     uvOffset = Vec2D.zero(), uvScale = Vec2D.one()}
+     uvOffset = Vec2D.zero(), uvScale = Vec2D.one(), rotation = 0.0f32}
 
 def mkPos(px: Float32, py: Float32): Vec2D.Vec2 =
     {x = px, y = py}
@@ -38,7 +38,7 @@ def testNestedPositionAccumulation(): Unit \ Assert =
 @Test
 def testInvisibleSpriteSkipped(): Unit \ Assert =
     let sd = {size = {x = 10.0f32, y = 10.0f32}, color = {r = 1.0f32, g = 1.0f32, b = 1.0f32}, texture = "block", visible = false,
-              uvOffset = Vec2D.zero(), uvScale = Vec2D.one()};
+              uvOffset = Vec2D.zero(), uvScale = Vec2D.one(), rotation = 0.0f32};
     let node = sprite2D("Hidden", Vec2D.zero(), sd);
     let result = collectDrawables(node, {x = 0.0f32, y = 0.0f32});
     Assert.assertEq(expected = 0, List.length(result))

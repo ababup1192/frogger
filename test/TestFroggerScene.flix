@@ -23,7 +23,19 @@ def testInitialSceneHasPlayerWithTargetPos(): Unit \ Assert =
             case Some(cbd) =>
                 Assert.assertEq(expected = 384.0f32, cbd#targetPos#x);
                 Assert.assertEq(expected = 832.0f32, cbd#targetPos#y)
-            case None => Assert.assertTrue(false)
+            case None => bug!("Player should be CharacterBody")
         }
-        case None => Assert.assertTrue(false)
+        case None => bug!("Player not found")
+    }
+
+// 初期シーンに HUD (CanvasLayer) が含まれること
+@Test
+def testInitialSceneContainsHUD(): Unit \ Assert =
+    let scene = FroggerScene.buildInitialScene();
+    match SceneTree.findNode("HUD", scene) {
+        case Some(hud) => match SceneTree.nodeKind(hud) {
+            case SceneTree.NodeKind.CanvasLayer => Assert.assertTrue(true)
+            case _ => bug!("HUD should be CanvasLayer")
+        }
+        case None => bug!("HUD not found in initial scene")
     }

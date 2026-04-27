@@ -42,14 +42,6 @@ mod VehicleLane {
     pub def vehicleName(laneIdx: Int32, vehicleIdx: Int32): String =
         "V${laneIdx}_${vehicleIdx}"
 
-    pub def vehicleSpriteName(): String = "Sprite"
-
-    // ========================================================================
-    // Vehicle size (matching Godot: 16x12 * 4 = 64x48)
-    // ========================================================================
-
-    pub def vehicleSize(): Vec2D.Vec2 = {x = 64.0f32, y = 48.0f32}
-
     // ========================================================================
     // Wrap boundaries — one car width buffer beyond each screen edge
     // ========================================================================
@@ -86,19 +78,13 @@ mod VehicleLane {
             x
 
     // ========================================================================
-    // Build a single vehicle (Area2D + Sprite + CollisionShape)
+    // Build a single vehicle — delegate to Vehicle.build
     // ========================================================================
 
     def buildVehicle(cfg: LaneConfig, i: Int32): SceneTree.Node =
-        let sprite = Sprite2D.init({name = vehicleSpriteName(),
-                                    pos = Vec2D.zero(),
-                                    size = vehicleSize(),
-                                    texture = cfg#texture});
-        let shape = SceneTree.collisionShape2D("Shape",
-                        SceneTree.CollisionShapeData.RectShape(vehicleSize()));
-        Area2D.init({name = vehicleName(cfg#laneIndex, i),
-                     pos = {x = initialX(cfg, i), y = 0.0f32},
-                     children = sprite :: shape :: Nil})
+        Vehicle.build(vehicleName(cfg#laneIndex, i),
+                      {x = initialX(cfg, i), y = 0.0f32},
+                      cfg#texture)
             |> Area2D.velocity({x = cfg#speed * cfg#direction, y = 0.0f32})
 
     // ========================================================================

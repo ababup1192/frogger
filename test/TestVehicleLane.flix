@@ -204,7 +204,7 @@ def testLane0VehicleTexture(): Unit \ Assert =
     // V0_0 は Area2D で、子ノード "Sprite" にテクスチャがある
     match SceneTree.findNode("V0_0", VehicleLane.buildVehicleLanes()) {
         case Some(v) =>
-            match SceneTree.findNode(VehicleLane.vehicleSpriteName(), v) {
+            match SceneTree.findNode("Sprite", v) {
                 case Some(sprite) => match SceneTree.nodeKind(sprite) {
                     case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "Car1", sd#texture)
                     case _ => Assert.assertTrue(false)
@@ -218,7 +218,7 @@ def testLane0VehicleTexture(): Unit \ Assert =
 def testLane2VehicleTexture(): Unit \ Assert =
     match SceneTree.findNode("V2_0", VehicleLane.buildVehicleLanes()) {
         case Some(v) =>
-            match SceneTree.findNode(VehicleLane.vehicleSpriteName(), v) {
+            match SceneTree.findNode("Sprite", v) {
                 case Some(sprite) => match SceneTree.nodeKind(sprite) {
                     case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "Car3", sd#texture)
                     case _ => Assert.assertTrue(false)

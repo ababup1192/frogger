@@ -52,23 +52,23 @@ def testTurtleLaneY5(): Unit \ Assert =
 @Test
 def testSectionWidth2Turtles(): Unit \ Assert =
     // 亀2匹: 2×64 = 128
-    Assert.assertEq(expected = 128.0f32, TurtleLane.sectionWidth(2))
+    Assert.assertEq(expected = 128.0f32, TurtleGroup.width(2))
 
 @Test
 def testSectionWidth3Turtles(): Unit \ Assert =
     // 亀3匹: 3×64 = 192
-    Assert.assertEq(expected = 192.0f32, TurtleLane.sectionWidth(3))
+    Assert.assertEq(expected = 192.0f32, TurtleGroup.width(3))
 
 @Test
 def testSectionSize2Turtles(): Unit \ Assert =
     // 亀2匹セクション: 幅128, 高さ48
-    let sz = TurtleLane.sectionSize(2);
+    let sz = TurtleGroup.size(2);
     Assert.assertEq(expected = (128.0f32, 48.0f32), (sz#x, sz#y))
 
 @Test
 def testSectionSize3Turtles(): Unit \ Assert =
     // 亀3匹セクション: 幅192, 高さ48
-    let sz = TurtleLane.sectionSize(3);
+    let sz = TurtleGroup.size(3);
     Assert.assertEq(expected = (192.0f32, 48.0f32), (sz#x, sz#y))
 
 // ========================================================================
@@ -177,14 +177,15 @@ def testLane5SectionHas2Sprites(): Unit \ Assert =
     }
 
 @Test
-def testSpriteTexture(): Unit \ Assert =
-    // 亀スプライトのテクスチャは "Turtle"
+def testSpriteAnimation(): Unit \ Assert =
+    // 亀スプライトは AnimatedSprite で、初期アニメーションが "swim"
     match SceneTree.findNode("T4_0", TurtleLane.buildTurtleLanes()) {
         case Some(secNode) =>
             match SceneTree.findNode("Sprite0", secNode) {
                 case Some(sprite) => match SceneTree.nodeKind(sprite) {
-                    case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "Turtle", sd#texture)
-                    case _ => bug!("Sprite0 should be Sprite")
+                    case SceneTree.NodeKind.AnimatedSprite(asd) =>
+                        Assert.assertEq(expected = "swim", asd#currentAnimation)
+                    case _ => bug!("Sprite0 should be AnimatedSprite")
                 }
                 case None => bug!("Sprite0 not found")
             }

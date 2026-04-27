@@ -10,6 +10,7 @@ mod FroggerScene {
         case TurtleLanes
         case HomeSlots
         case DeathTimer
+        case HUD
     }
 
     instance SceneTree.SceneChild[Child] {
@@ -21,6 +22,7 @@ mod FroggerScene {
             case Child.TurtleLanes => TurtleLane.containerName()
             case Child.HomeSlots => HomeSlot.containerName()
             case Child.DeathTimer => FroggerScene.deathTimerName()
+            case Child.HUD => FroggerHUD.containerName()
         }
     }
 
@@ -62,8 +64,6 @@ mod FroggerScene {
     // ========================================================================
 
     def greenColor(): Engine.Color  = {r = 0.2f32, g = 0.5f32, b = 0.2f32}
-    def blueColor(): Engine.Color   = {r = 0.0f32, g = 0.2f32, b = 0.6f32}
-    def darkGrayColor(): Engine.Color = {r = 0.15f32, g = 0.15f32, b = 0.15f32}
 
     // ========================================================================
     // Helpers
@@ -73,15 +73,22 @@ mod FroggerScene {
         Sprite2D.init({name = name, pos = {x = 0.0f32, y = y}, size = {x = screenW(), y = h}, texture = "white"})
             |> Sprite2D.color(col)
 
+    // 16x16 texture at 4x scale = 64px tile
+    def tileSize(): Float32 = 64.0f32
+
+    def tiledRect(name: String, y: Float32, h: Float32, texture: String): SceneTree.Node =
+        Sprite2D.init({name = name, pos = {x = 0.0f32, y = y}, size = {x = screenW(), y = h}, texture = texture})
+            |> Sprite2D.uv(Vec2D.zero(), {x = screenW() / tileSize(), y = h / tileSize()})
+
     // ========================================================================
     // Board Builder
     // ========================================================================
 
     pub def buildBoard(): List[SceneTree.Node] =
         coloredRect("HomeZone",   homeZoneY(),   homeZoneH(),   greenColor()) ::
-        coloredRect("WaterZone",  waterZoneY(),  waterZoneH(),  blueColor()) ::
-        coloredRect("MedianZone", medianZoneY(), medianZoneH(), greenColor()) ::
-        coloredRect("RoadZone",   roadZoneY(),   roadZoneH(),   darkGrayColor()) ::
+        tiledRect("WaterZone",    waterZoneY(),  waterZoneH(),  "Water") ::
+        tiledRect("MedianZone",   medianZoneY(), medianZoneH(), "Median") ::
+        tiledRect("RoadZone",     roadZoneY(),   roadZoneH(),   "Road") ::
         coloredRect("StartZone",  startZoneY(),  startZoneH(),  greenColor()) ::
         Nil
 
@@ -91,7 +98,7 @@ mod FroggerScene {
 
     pub def buildInitialScene(): SceneTree.Node =
         let deathTimer = Timer2D.init({name = deathTimerName(), waitTime = deathTimerWait(), oneShot = true});
-        (buildBoard() ::: HomeSlot.buildHomeSlots() :: WaterLane.buildWaterLanes() :: TurtleLane.buildTurtleLanes() :: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: deathTimer :: Nil)
+        (buildBoard() ::: HomeSlot.buildHomeSlots() :: WaterLane.buildWaterLanes() :: TurtleLane.buildTurtleLanes() :: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: deathTimer :: FroggerHUD.buildHUD() :: Nil)
             |> SceneTree.node2D(rootName(), Vec2D.zero())
 
     // ========================================================================
@@ -112,7 +119,7 @@ mod FroggerScene {
     // Death Trigger — shared helper for vehicle collision and drowning
     // ========================================================================
 
-    def triggerDeath(state: Game.GameState): Game.GameState =
+    pub def triggerDeath(state: Game.GameState): Game.GameState =
         {scene = state#scene
             |> FroggerPlayer.showDeathSprite
             |> SceneTree.startTimer(SceneTree.childName(Child.DeathTimer)),
@@ -134,9 +141,11 @@ mod FroggerScene {
                         let filledScene = state#scene |> HomeSlot.fillSlot(slotIdx);
                         let respawnedScene = FroggerPlayer.respawn(filledScene);
                         if (HomeSlot.allFilled(newFilled))
-                            {scene = respawnedScene, homeSlotsFilled = newFilled, won = true | state}
+                            {scene = respawnedScene, homeSlotsFilled = newFilled, won = true,
+                             timeRemaining = Game.initialTimeRemaining() | state}
                         else
-                            {scene = respawnedScene, homeSlotsFilled = newFilled | state}
+                            {scene = respawnedScene, homeSlotsFilled = newFilled,
+                             timeRemaining = Game.initialTimeRemaining() | state}
                     case None =>
                         // Home zone but no valid slot — death (hit wall between slots)
                         triggerDeath(state)
@@ -160,7 +169,8 @@ mod FroggerScene {
             let wrappedScene = movedScene
                 |> VehicleLane.wrapVehicles
                 |> WaterLane.wrapLogs
-                |> TurtleLane.wrapTurtles;
+                |> TurtleLane.wrapTurtles
+                |> SceneTree.stepAnimations(dt);
             run {
                 let s = SceneTree.stepTimers(dt, wrappedScene);
                 {scene = s | state}
@@ -169,7 +179,8 @@ mod FroggerScene {
                     let st = k(());
                     if (name == SceneTree.childName(Child.DeathTimer))
                         if (st#lives > 0)
-                            {scene = FroggerPlayer.respawn(st#scene) | st}
+                            {scene = FroggerPlayer.respawn(st#scene),
+                             timeRemaining = Game.initialTimeRemaining() | st}
                         else
                             {gameOver = true | st}
                     else st
@@ -179,7 +190,7 @@ mod FroggerScene {
             let playerScene = FroggerPlayer.stepFrame(dt, state#scene);
             let collisionState = run {
                 let s = SceneTree.stepAndCollide(playerScene, dt, physicsConfig());
-                {scene = s |> VehicleLane.wrapVehicles |> WaterLane.wrapLogs |> TurtleLane.wrapTurtles | state}
+                {scene = s |> VehicleLane.wrapVehicles |> WaterLane.wrapLogs |> TurtleLane.wrapTurtles |> SceneTree.stepAnimations(dt) | state}
             } with handler SceneTree.OnCollision {
                 def bodyEntered(_name, _pos, _body, k) = k(())
                 def areaEntered(name, _pos, body, k) =

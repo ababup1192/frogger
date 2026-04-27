@@ -7,7 +7,8 @@ mod Game {
         prevKeys        = Set[Engine.Key],
         lives           = Int32,
         homeSlotsFilled = Set[Int32],
-        won             = Bool
+        won             = Bool,
+        timeRemaining   = Float32
     }
 
     // ========================================================================
@@ -33,6 +34,7 @@ mod Game {
     pub def textureManifest(): List[Engine.TextureEntry] =
         {name = "white", path = "textures/white_1x1.png", hasAlpha = true} ::
         {name = "FroggerIdle", path = "textures/FroggerIdle.png", hasAlpha = true} ::
+        {name = "FroggerLeap", path = "textures/FroggerLeap.png", hasAlpha = true} ::
         {name = "Car1", path = "textures/Car1.png", hasAlpha = true} ::
         {name = "Car2", path = "textures/Car2.png", hasAlpha = true} ::
         {name = "Car3", path = "textures/Car3.png", hasAlpha = true} ::
@@ -42,9 +44,14 @@ mod Game {
         {name = "LogStart", path = "textures/LogStart.png", hasAlpha = true} ::
         {name = "LogMiddle", path = "textures/LogMiddle.png", hasAlpha = true} ::
         {name = "LogEnd", path = "textures/LogEnd.png", hasAlpha = true} ::
-        {name = "Turtle", path = "textures/Turtle_01.png", hasAlpha = true} ::
+        {name = "Turtle_01", path = "textures/Turtle_01.png", hasAlpha = true} ::
+        {name = "Turtle_02", path = "textures/Turtle_02.png", hasAlpha = true} ::
+        {name = "Turtle_03", path = "textures/Turtle_03.png", hasAlpha = true} ::
         {name = "Home", path = "textures/Home.png", hasAlpha = true} ::
         {name = "HomeFrog", path = "textures/HomeFrog.png", hasAlpha = true} ::
+        {name = "Road", path = "textures/Road.png", hasAlpha = true} ::
+        {name = "Water", path = "textures/Water.png", hasAlpha = true} ::
+        {name = "Median", path = "textures/Median.png", hasAlpha = true} ::
         Nil
 
     // ========================================================================
@@ -74,7 +81,8 @@ mod Game {
 
     pub def collectPressedKeys(): Set[Engine.Key] \ Engine.Game =
         let keys = Engine.Key.W :: Engine.Key.A :: Engine.Key.S :: Engine.Key.D ::
-                   Engine.Key.Up :: Engine.Key.Down :: Engine.Key.Left :: Engine.Key.Right :: Nil;
+                   Engine.Key.Up :: Engine.Key.Down :: Engine.Key.Left :: Engine.Key.Right ::
+                   Engine.Key.Enter :: Nil;
         List.foldLeft((acc, k) ->
             if (Engine.Game.isKeyPressed(k)) Set.insert(k, acc) else acc,
             Set.empty(), keys)
@@ -106,30 +114,62 @@ mod Game {
     // Game Initialization
     // ========================================================================
 
+    pub def initialTimeRemaining(): Float32 = 30.0f32
+
     pub def initGame(): GameState =
         let scene = FroggerScene.buildInitialScene();
         {scene = scene, gameOver = false, prevKeys = Set.empty(), lives = 3,
-         homeSlotsFilled = Set.empty(), won = false}
+         homeSlotsFilled = Set.empty(), won = false, timeRemaining = initialTimeRemaining()}
 
     // ========================================================================
     // Game Loop
     // ========================================================================
 
-    def processInput(state: GameState): GameState \ Engine.Game =
-        let currKeys = collectPressedKeys();
-        if (FroggerScene.isPlayerDead(state#scene))
-            {prevKeys = currKeys | state}
-        else {
-            let justPressed = justPressedKeys(currKeys, state#prevKeys);
-            {scene = match inputDirection(justPressed) {
-                case Some(dir) => FroggerScene.applyInput(dir, state#scene)
-                case None      => state#scene
-            }, prevKeys = currKeys | state}
-        }
-
     pub def updateGame(state: GameState): GameState \ Engine.Game =
-        (if (not state#gameOver and not state#won) processInput(state) else state) |>
-            FroggerScene.stepFrame(Engine.Game.getDeltaTime())
+        let dt = Engine.Game.getDeltaTime();
+        let currKeys = collectPressedKeys();
+        if (state#gameOver or state#won) {
+            // Game ended — Enter to restart, otherwise just update prevKeys
+            let justPressed = justPressedKeys(currKeys, state#prevKeys);
+            if (Set.memberOf(Engine.Key.Enter, justPressed))
+                initGame()
+            else
+                {prevKeys = currKeys | state}
+        } else {
+            // Normal play
+            let inputState = if (FroggerScene.isPlayerDead(state#scene))
+                {prevKeys = currKeys | state}
+            else {
+                let justPressed = justPressedKeys(currKeys, state#prevKeys);
+                {scene = match inputDirection(justPressed) {
+                    case Some(dir) => FroggerScene.applyInput(dir, state#scene)
+                    case None      => state#scene
+                }, prevKeys = currKeys | state}
+            };
+            // Physics & collision
+            let physicsState = FroggerScene.stepFrame(dt, inputState);
+            // Timer countdown (skip while dead)
+            let timerState = if (FroggerScene.isPlayerDead(physicsState#scene))
+                physicsState
+            else {
+                let newTime = physicsState#timeRemaining - dt;
+                if (newTime <= 0.0f32)
+                    FroggerScene.triggerDeath({timeRemaining = 0.0f32 | physicsState})
+                else
+                    {timeRemaining = newTime | physicsState}
+            };
+            // HUD update
+            let hudScene = timerState#scene
+                |> FroggerHUD.updateLives(timerState#lives)
+                |> FroggerHUD.updateTimer(timerState#timeRemaining);
+            // End-game messages
+            let finalScene = if (timerState#gameOver)
+                hudScene |> FroggerHUD.showMessage("You Lost!") |> FroggerHUD.showRestart
+            else if (timerState#won)
+                hudScene |> FroggerHUD.showMessage("You Won!") |> FroggerHUD.showRestart
+            else hudScene;
+            {scene = finalScene | timerState}
+        }
 
     pub def startGame(): GameState \ Engine.Game =
         let state = initGame();

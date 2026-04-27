@@ -205,7 +205,7 @@ mod LwjglLayer {
         let w = stack.mallocInt(1);
         let h = stack.mallocInt(1);
         let c = stack.mallocInt(1);
-        STBImage.stbi_set_flip_vertically_on_load(true);
+        STBImage.stbi_set_flip_vertically_on_load(false);
         let channels = if (alpha) 4 else 3;
         let data = STBImage.stbi_load(path, w, h, c, channels);
         if (Object.isNull(data)) {

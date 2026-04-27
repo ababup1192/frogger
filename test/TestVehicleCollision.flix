@@ -59,14 +59,14 @@ def testDeadAfterTimerStart(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testShowDeathSpriteChangesTexture(): Unit \ Assert =
-    // Player配下の Sprite のみを検索（車両の Sprite を拾わない）
+def testShowDeathSpriteChangesAnimation(): Unit \ Assert =
+    // 死亡時は AnimatedSprite の currentAnimation が "dead" に変わる
     let deathScene = FroggerScene.buildInitialScene() |> FroggerPlayer.showDeathSprite;
     match SceneTree.findNodeIn(FroggerPlayer.playerName(), SceneTree.childName(FroggerPlayer.Child.Sprite), deathScene) {
         case Some(sprite) => match SceneTree.nodeKind(sprite) {
-            case SceneTree.NodeKind.Sprite(sd) =>
-                Assert.assertEq(expected = "FroggerDead", sd#texture)
-            case _ => bug!("Player/Sprite is not a Sprite node")
+            case SceneTree.NodeKind.AnimatedSprite(asd) =>
+                Assert.assertEq(expected = "dead", asd#currentAnimation)
+            case _ => bug!("Player/Sprite is not an AnimatedSprite node")
         }
         case None => bug!("Player/Sprite not found")
     }
@@ -89,16 +89,16 @@ def testRespawnResetsPosition(): Unit \ Assert =
     }
 
 @Test
-def testRespawnRestoresIdleSprite(): Unit \ Assert =
-    // Player配下の Sprite のみを検索（車両の Sprite を拾わない）
+def testRespawnRestoresIdleAnimation(): Unit \ Assert =
+    // リスポーン後は AnimatedSprite の currentAnimation が "idle" に戻る
     let respawned = FroggerScene.buildInitialScene()
         |> FroggerPlayer.showDeathSprite
         |> FroggerPlayer.respawn;
     match SceneTree.findNodeIn(FroggerPlayer.playerName(), SceneTree.childName(FroggerPlayer.Child.Sprite), respawned) {
         case Some(sprite) => match SceneTree.nodeKind(sprite) {
-            case SceneTree.NodeKind.Sprite(sd) =>
-                Assert.assertEq(expected = "FroggerIdle", sd#texture)
-            case _ => bug!("Player/Sprite is not a Sprite node")
+            case SceneTree.NodeKind.AnimatedSprite(asd) =>
+                Assert.assertEq(expected = "idle", asd#currentAnimation)
+            case _ => bug!("Player/Sprite is not an AnimatedSprite node")
         }
         case None => bug!("Player/Sprite not found")
     }

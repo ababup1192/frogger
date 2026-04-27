@@ -40,28 +40,13 @@ mod TurtleLane {
         "T${laneIdx}_${secIdx}"
 
     // ========================================================================
-    // Section Size — computed from turtleCount
-    // Each turtle sprite is 64×48, sections are turtleCount turtles wide
-    // ========================================================================
-
-    def turtleSpriteW(): Float32 = 64.0f32
-
-    def turtleSpriteH(): Float32 = 48.0f32
-
-    pub def sectionWidth(turtleCount: Int32): Float32 =
-        Int32.toFloat32(turtleCount) * turtleSpriteW()
-
-    pub def sectionSize(turtleCount: Int32): Vec2D.Vec2 =
-        {x = sectionWidth(turtleCount), y = turtleSpriteH()}
-
-    // ========================================================================
     // Wrap boundaries
     // ========================================================================
 
     def screenW(): Float32 = Int32.toFloat32(Game.screenWidth())
 
     pub def wrapMin(turtleCount: Int32): Float32 =
-        -1.0f32 * sectionWidth(turtleCount) - 20.0f32
+        -1.0f32 * TurtleGroup.width(turtleCount) - 20.0f32
 
     pub def wrapMax(): Float32 = screenW() + 20.0f32
 
@@ -85,29 +70,14 @@ mod TurtleLane {
             cfg#spacing * fi
 
     // ========================================================================
-    // Build turtle sprites for a section (turtleCount sprites side by side)
-    // ========================================================================
-
-    def buildTurtleSprites(turtleCount: Int32): List[SceneTree.Node] =
-        let spriteY = 8.0f32;
-        List.range(0, turtleCount)
-            |> List.map(i ->
-                Sprite2D.init({name = "Sprite${i}",
-                               pos = {x = Int32.toFloat32(i) * turtleSpriteW(), y = spriteY},
-                               size = {x = turtleSpriteW(), y = turtleSpriteH()},
-                               texture = "Turtle"}))
-
-    // ========================================================================
-    // Build a single section (Area2D + Turtle Sprites + CollisionShape)
+    // Build a single section — delegate to TurtleGroup.build
     // ========================================================================
 
     def buildSection(cfg: TurtleLaneConfig, i: Int32): SceneTree.Node =
-        let sprites = buildTurtleSprites(cfg#turtleCount);
-        let shape = SceneTree.collisionShape2D("Shape",
-                        SceneTree.CollisionShapeData.RectShape(sectionSize(cfg#turtleCount)));
-        Area2D.init({name = sectionName(cfg#laneIndex, i),
-                     pos = {x = initialX(cfg, i), y = 0.0f32},
-                     children = List.append(sprites, shape :: Nil)})
+        TurtleGroup.build(sectionName(cfg#laneIndex, i),
+                          {x = initialX(cfg, i), y = 0.0f32},
+                          cfg#turtleCount,
+                          cfg#direction)
             |> Area2D.velocity({x = cfg#speed * cfg#direction, y = 0.0f32})
 
     // ========================================================================
@@ -178,7 +148,7 @@ mod TurtleLane {
 
     def findOverlapInLane(hitboxPos: Vec2D.Vec2, hitboxSize: Vec2D.Vec2,
                           cfg: TurtleLaneConfig, scene: SceneTree.Node): Option[Vec2D.Vec2] =
-        let secSz = sectionSize(cfg#turtleCount);
+        let secSz = TurtleGroup.size(cfg#turtleCount);
         let vel = {x = cfg#speed * cfg#direction, y = 0.0f32};
         List.range(0, cfg#sectionCount)
             |> List.findMap(i ->

@@ -51,15 +51,16 @@ def testPlayerSpriteChildName(): Unit \ Assert =
     }
 
 @Test
-def testPlayerSpriteTexture(): Unit \ Assert =
+def testPlayerSpriteAnimation(): Unit \ Assert =
+    // プレイヤーのスプライトは AnimatedSprite で、初期アニメーションが "idle"
     let player = FroggerPlayer.buildPlayer();
     match SceneTree.findNode("Sprite", player) {
         case Some(sprite) => match SceneTree.nodeKind(sprite) {
-            case SceneTree.NodeKind.Sprite(sd) =>
-                Assert.assertEq(expected = "FroggerIdle", sd#texture)
-            case _ => Assert.assertTrue(false)
+            case SceneTree.NodeKind.AnimatedSprite(asd) =>
+                Assert.assertEq(expected = "idle", asd#currentAnimation)
+            case _ => bug!("Player/Sprite is not an AnimatedSprite node")
         }
-        case None => Assert.assertTrue(false)
+        case None => bug!("Player/Sprite not found")
     }
 
 @Test
@@ -67,12 +68,11 @@ def testPlayerSpriteSize(): Unit \ Assert =
     let player = FroggerPlayer.buildPlayer();
     match SceneTree.findNode("Sprite", player) {
         case Some(sprite) => match SceneTree.nodeKind(sprite) {
-            case SceneTree.NodeKind.Sprite(sd) =>
-                Assert.assertEq(expected = 64.0f32, sd#size#x);
-                Assert.assertEq(expected = 64.0f32, sd#size#y)
-            case _ => Assert.assertTrue(false)
+            case SceneTree.NodeKind.AnimatedSprite(asd) =>
+                Assert.assertEq(expected = (64.0f32, 64.0f32), (asd#size#x, asd#size#y))
+            case _ => bug!("Player/Sprite is not an AnimatedSprite node")
         }
-        case None => Assert.assertTrue(false)
+        case None => bug!("Player/Sprite not found")
     }
 
 // ========================================================================

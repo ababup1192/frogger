@@ -39,10 +39,17 @@ mod FroggerPlayer {
     // Node Builder
     // ========================================================================
 
+    def playerAnimations(): Map[String, SceneTree.AnimationEntry] =
+        Map.empty()
+            |> Map.insert("idle", {frames = "FroggerIdle" :: "FroggerLeap" :: Nil})
+            |> Map.insert("dead", {frames = "FroggerDead" :: Nil})
+
     pub def buildPlayer(): SceneTree.Node =
-        let sprite = Sprite2D.init({name = SceneTree.childName(Child.Sprite), pos = Vec2D.zero(),
-                                    size = {x = cellSize(), y = cellSize()},
-                                    texture = "FroggerIdle"});
+        let sprite = AnimatedSprite2D.init({name = SceneTree.childName(Child.Sprite), pos = Vec2D.zero(),
+                                            size = {x = cellSize(), y = cellSize()},
+                                            animations = playerAnimations(),
+                                            initialAnimation = "idle"})
+            |> AnimatedSprite2D.fps(4.0f32);
         let hitboxShape = SceneTree.collisionShape2D("Shape",
                             SceneTree.CollisionShapeData.RectShape(playerHitboxSize()));
         let hitbox = Area2D.init({name = SceneTree.childName(Child.Hitbox),
@@ -62,25 +69,30 @@ mod FroggerPlayer {
         Vec2D.clamp(raw, minBound(), maxBound())
 
     // ========================================================================
-    // Input Application — update targetPos on CharacterBody
+    // Input Application — update targetPos on CharacterBody + rotate sprite
     // ========================================================================
 
     pub def applyInput(dir: SceneTree.Direction, scene: SceneTree.Node): SceneTree.Node =
-        SceneTree.updateCharacterBody(playerName(), cbd ->
-            {targetPos = computeNewTarget(dir, cbd#targetPos) | cbd}, scene)
+        scene
+            |> SceneTree.updateCharacterBody(playerName(), cbd ->
+                {targetPos = computeNewTarget(dir, cbd#targetPos) | cbd})
+            |> SceneTree.updateChildAnimatedSprite(playerName(), asd ->
+                {rotation = SceneTree.directionToRotation(dir) | asd})
 
     // ========================================================================
     // Death & Respawn
     // ========================================================================
 
     pub def showDeathSprite(scene: SceneTree.Node): SceneTree.Node =
-        SceneTree.updateChildSprite(playerName(), sd -> {texture = "FroggerDead" | sd}, scene)
+        SceneTree.updateChildAnimatedSprite(playerName(),
+            asd -> {currentAnimation = "dead", currentFrame = 0, frameTimer = 0.0f32, playing = false, rotation = 0.0f32 | asd}, scene)
 
     pub def respawn(scene: SceneTree.Node): SceneTree.Node =
         scene
             |> SceneTree.setNodePosition(playerName(), startPos())
             |> SceneTree.updateCharacterBody(playerName(), cbd -> {targetPos = startPos() | cbd})
-            |> SceneTree.updateChildSprite(playerName(), sd -> {texture = "FroggerIdle" | sd})
+            |> SceneTree.updateChildAnimatedSprite(playerName(),
+                asd -> {currentAnimation = "idle", currentFrame = 0, frameTimer = 0.0f32, playing = true, rotation = 0.0f32 | asd})
 
     // ========================================================================
     // Movement State Query

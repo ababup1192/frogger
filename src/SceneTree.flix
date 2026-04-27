@@ -7,7 +7,8 @@ mod SceneTree {
         texture = String,
         visible = Bool,
         uvOffset = Vec2D.Vec2,
-        uvScale = Vec2D.Vec2
+        uvScale = Vec2D.Vec2,
+        rotation = Float32
     }
 
     pub enum CollisionShapeData {
@@ -50,7 +51,8 @@ mod SceneTree {
         fps = Float32,
         playing = Bool,
         flipH = Bool,
-        flipV = Bool
+        flipV = Bool,
+        rotation = Float32
     }
 
     pub type alias RaycastData = {
@@ -618,7 +620,7 @@ mod SceneTree {
         let globalPos = Vec2D.add(parentPos, pos);
         match kind {
             case NodeKind.Sprite(sd) =>
-                if (sd#visible) (sd, globalPos, parentRot) :: Nil else Nil
+                if (sd#visible) (sd, globalPos, parentRot + sd#rotation) :: Nil else Nil
             case NodeKind.Fixed(bd) =>
                 if (bd#destroyed) Nil
                 else List.flatMap(child -> collectDrawablesHelper(child, globalPos, parentRot), children)
@@ -638,9 +640,10 @@ mod SceneTree {
                                 size = asd#size, color = asd#color, texture = tex,
                                 visible = true,
                                 uvOffset = {x = ox, y = oy},
-                                uvScale = {x = sx, y = sy}
+                                uvScale = {x = sx, y = sy},
+                                rotation = asd#rotation
                             };
-                            (sd, globalPos, parentRot) :: Nil
+                            (sd, globalPos, parentRot + asd#rotation) :: Nil
                         case None => Nil
                     }
                 } else Nil
@@ -667,6 +670,17 @@ mod SceneTree {
             case Direction.Down  => {x = 0.0f32, y = 1.0f32}
             case Direction.Left  => {x = -1.0f32, y = 0.0f32}
             case Direction.Right => {x = 1.0f32, y = 0.0f32}
+        }
+
+    /// Direction to rotation angle (radians).
+    /// Y-down screen coordinates: positive angle = clockwise.
+    pub def directionToRotation(dir: Direction): Float32 =
+        let pi = 3.14159265f32;
+        match dir {
+            case Direction.Up    => 0.0f32
+            case Direction.Right => pi / 2.0f32
+            case Direction.Down  => pi
+            case Direction.Left  => -1.0f32 * pi / 2.0f32
         }
 
     pub def vectorDirection(target: Vec2D.Vec2): Direction =

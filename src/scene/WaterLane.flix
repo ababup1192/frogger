@@ -42,26 +42,13 @@ mod WaterLane {
         "L${laneIdx}_${logIdx}"
 
     // ========================================================================
-    // Log Size — computed from segments count
-    // total width = 64 (Start) + segments * 64 (Middle) + 64 (End)
-    // ========================================================================
-
-    def segmentSize(): Float32 = 64.0f32
-
-    pub def logWidth(segments: Int32): Float32 =
-        (Int32.toFloat32(segments) + 2.0f32) * segmentSize()
-
-    pub def logSize(segments: Int32): Vec2D.Vec2 =
-        {x = logWidth(segments), y = 48.0f32}
-
-    // ========================================================================
     // Wrap boundaries
     // ========================================================================
 
     def screenW(): Float32 = Int32.toFloat32(Game.screenWidth())
 
     pub def wrapMin(segments: Int32): Float32 =
-        -1.0f32 * logWidth(segments) - 20.0f32
+        -1.0f32 * Log.width(segments) - 20.0f32
 
     pub def wrapMax(): Float32 = screenW() + 20.0f32
 
@@ -85,39 +72,13 @@ mod WaterLane {
             cfg#spacing * fi
 
     // ========================================================================
-    // Build log sprites (LogStart + LogMiddle*n + LogEnd)
-    // ========================================================================
-
-    def buildLogSprites(segments: Int32): List[SceneTree.Node] =
-        let spriteH = 48.0f32;
-        let spriteY = 8.0f32;
-        let startSprite = Sprite2D.init({name = "SpriteStart",
-                                         pos = {x = 0.0f32, y = spriteY},
-                                         size = {x = segmentSize(), y = spriteH},
-                                         texture = "LogStart"});
-        let midSprites = List.range(0, segments)
-            |> List.map(i ->
-                Sprite2D.init({name = "SpriteMid${i}",
-                               pos = {x = segmentSize() + Int32.toFloat32(i) * segmentSize(), y = spriteY},
-                               size = {x = segmentSize(), y = spriteH},
-                               texture = "LogMiddle"}));
-        let endSprite = Sprite2D.init({name = "SpriteEnd",
-                                       pos = {x = segmentSize() + Int32.toFloat32(segments) * segmentSize(), y = spriteY},
-                                       size = {x = segmentSize(), y = spriteH},
-                                       texture = "LogEnd"});
-        startSprite :: List.append(midSprites, endSprite :: Nil)
-
-    // ========================================================================
-    // Build a single log (Area2D + Sprites + CollisionShape)
+    // Build a single log — delegate to Log.build
     // ========================================================================
 
     def buildLog(cfg: LogLaneConfig, i: Int32): SceneTree.Node =
-        let sprites = buildLogSprites(cfg#segments);
-        let shape = SceneTree.collisionShape2D("Shape",
-                        SceneTree.CollisionShapeData.RectShape(logSize(cfg#segments)));
-        Area2D.init({name = logName(cfg#laneIndex, i),
-                     pos = {x = initialX(cfg, i), y = 0.0f32},
-                     children = List.append(sprites, shape :: Nil)})
+        Log.build(logName(cfg#laneIndex, i),
+                  {x = initialX(cfg, i), y = 0.0f32},
+                  cfg#segments)
             |> Area2D.velocity({x = cfg#speed * cfg#direction, y = 0.0f32})
 
     // ========================================================================
@@ -199,7 +160,7 @@ mod WaterLane {
 
     def findOverlapInLane(hitboxPos: Vec2D.Vec2, hitboxSize: Vec2D.Vec2,
                           cfg: LogLaneConfig, scene: SceneTree.Node): Option[Vec2D.Vec2] =
-        let logSz = logSize(cfg#segments);
+        let logSz = Log.size(cfg#segments);
         let vel = {x = cfg#speed * cfg#direction, y = 0.0f32};
         List.range(0, cfg#logCount)
             |> List.findMap(i ->

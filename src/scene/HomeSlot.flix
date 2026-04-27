@@ -12,6 +12,8 @@ mod HomeSlot {
 
     pub def slotName(i: Int32): String = "HS${i}"
 
+    def emptySpriteName(i: Int32): String = "HSEmpty${i}"
+
     def filledSpriteName(i: Int32): String = "HSFilled${i}"
 
     def slotSize(): Vec2D.Vec2 = {x = 64.0f32, y = 64.0f32}
@@ -64,7 +66,7 @@ mod HomeSlot {
     // ========================================================================
 
     def buildSlot(i: Int32): SceneTree.Node =
-        let emptySprite = Sprite2D.init({name = "EmptySprite",
+        let emptySprite = Sprite2D.init({name = emptySpriteName(i),
                                          pos = Vec2D.zero(),
                                          size = slotSize(),
                                          texture = "Home"});
@@ -91,7 +93,8 @@ mod HomeSlot {
     // ========================================================================
 
     pub def fillSlot(slotIdx: Int32, scene: SceneTree.Node): SceneTree.Node =
-        SceneTree.updateSprite(filledSpriteName(slotIdx),
-            sd -> {visible = true | sd}, scene)
+        scene
+            |> SceneTree.updateSprite(emptySpriteName(slotIdx), sd -> {visible = false | sd})
+            |> SceneTree.updateSprite(filledSpriteName(slotIdx), sd -> {visible = true | sd})
 
 }

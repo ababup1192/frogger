@@ -16,7 +16,8 @@ mod Sprite2D {
             texture = req#texture,
             visible = true,
             uvOffset = Vec2D.zero(),
-            uvScale = Vec2D.one()
+            uvScale = Vec2D.one(),
+            rotation = 0.0f32
         })
 
     pub def color(v: Engine.Color, node: SceneTree.Node): SceneTree.Node =
@@ -42,6 +43,14 @@ mod Sprite2D {
                 SceneTree.Node.MkNode(n, p, SceneTree.NodeKind.Sprite({uvOffset = offset, uvScale = scale | sd}), ch)
             case _ => node
         }
+
+    pub def rotation(v: Float32, node: SceneTree.Node): SceneTree.Node =
+        let SceneTree.Node.MkNode(n, p, kind, ch) = node;
+        match kind {
+            case SceneTree.NodeKind.Sprite(sd) =>
+                SceneTree.Node.MkNode(n, p, SceneTree.NodeKind.Sprite({rotation = v | sd}), ch)
+            case _ => node
+        }
 }
 
 // ========================================================================
@@ -63,7 +72,8 @@ mod AnimatedSprite2D {
             fps = 6.0f32,
             playing = true,
             flipH = false,
-            flipV = false
+            flipV = false,
+            rotation = 0.0f32
         })
 
     def modify(f: SceneTree.AnimatedSpriteData -> SceneTree.AnimatedSpriteData, node: SceneTree.Node): SceneTree.Node =
@@ -92,6 +102,9 @@ mod AnimatedSprite2D {
 
     pub def flipV(v: Bool, node: SceneTree.Node): SceneTree.Node =
         modify(asd -> {flipV = v | asd}, node)
+
+    pub def rotation(v: Float32, node: SceneTree.Node): SceneTree.Node =
+        modify(asd -> {rotation = v | asd}, node)
 }
 
 // ========================================================================

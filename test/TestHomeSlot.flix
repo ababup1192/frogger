@@ -164,17 +164,13 @@ def testSlotHasTwoSprites(): Unit \ Assert =
 @Test
 def testSlotEmptySpriteTexture(): Unit \ Assert =
     // EmptySprite のテクスチャは "Home"
-    match SceneTree.findNode("HS0", HomeSlot.buildHomeSlots()) {
-        case Some(slot) =>
-            match SceneTree.findNode("EmptySprite", slot) {
-                case Some(sprite) => match SceneTree.nodeKind(sprite) {
-                    case SceneTree.NodeKind.Sprite(sd) =>
-                        Assert.assertEq(expected = "Home", sd#texture)
-                    case _ => bug!("EmptySprite should be Sprite")
-                }
-                case None => bug!("EmptySprite not found")
-            }
-        case None => bug!("HS0 not found")
+    match SceneTree.findNode("HSEmpty0", HomeSlot.buildHomeSlots()) {
+        case Some(sprite) => match SceneTree.nodeKind(sprite) {
+            case SceneTree.NodeKind.Sprite(sd) =>
+                Assert.assertEq(expected = "Home", sd#texture)
+            case _ => bug!("HSEmpty0 should be Sprite")
+        }
+        case None => bug!("HSEmpty0 not found")
     }
 
 // ========================================================================
@@ -194,6 +190,21 @@ def testFillSlotMakesFilledSpriteVisible(): Unit \ Assert =
             case _ => bug!("HSFilled0 should be Sprite")
         }
         case None => bug!("HSFilled0 not found")
+    }
+
+@Test
+def testFillSlotHidesEmptySprite(): Unit \ Assert =
+    // fillSlot でスロットを埋めると、EmptySprite が非表示になる
+    let scene = SceneTree.node2D("Root", Vec2D.zero(),
+        HomeSlot.buildHomeSlots() :: Nil);
+    let filled = HomeSlot.fillSlot(0, scene);
+    match SceneTree.findNode("HSEmpty0", filled) {
+        case Some(sprite) => match SceneTree.nodeKind(sprite) {
+            case SceneTree.NodeKind.Sprite(sd) =>
+                Assert.assertFalse(sd#visible)
+            case _ => bug!("HSEmpty0 should be Sprite")
+        }
+        case None => bug!("HSEmpty0 not found")
     }
 
 @Test
