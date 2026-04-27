@@ -169,11 +169,11 @@ isJustPressed(key) = isKeyPressed(key) AND NOT prevKeys.contains(key)
 
 ---
 
-### - [ ] Phase 7: 亀レーン
-- [ ] `TurtleLane.flix` を作成（WaterLane と類似構造）
-- [ ] 亀セクション: 複数の亀スプライトでプラットフォームを構成
-- [ ] 丸太と同様のスクロール＆乗車ロジック
-- [ ] `flix run` で亀に乗って水域を横断できる
+### - [x] Phase 7: 亀レーン
+- [x] `TurtleLane.flix` を作成（WaterLane と類似構造）
+- [x] 亀セクション: 複数の亀スプライトでプラットフォームを構成
+- [x] 丸太と同様のスクロール＆乗車ロジック
+- [x] `flix run` で亀に乗って水域を横断できる
 
 **確認ポイント**: 亀も丸太と同じくプラットフォームとして機能する
 
