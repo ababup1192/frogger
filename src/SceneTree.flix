@@ -191,6 +191,29 @@ mod SceneTree {
         def buttonPressed(buttonName: String): Unit
     }
 
+    // ========================================================================
+    // Noop Effect Handlers
+    // ========================================================================
+
+    /// OnCollision を無視して実行する
+    pub def runWithNoopCollision(f: Unit -> a \ ef + OnCollision): a \ ef =
+        run f() with handler OnCollision {
+            def bodyEntered(_name, _pos, _body, k) = k(())
+            def areaEntered(_name, _pos, _body, k) = k(())
+        }
+
+    /// OnTimeout を無視して実行する
+    pub def runWithNoopTimeout(f: Unit -> a \ ef + OnTimeout): a \ ef =
+        run f() with handler OnTimeout {
+            def timeout(_name, k) = k(())
+        }
+
+    /// OnScreenExited を無視して実行する
+    pub def runWithNoopScreenExited(f: Unit -> a \ ef + OnScreenExited): a \ ef =
+        run f() with handler OnScreenExited {
+            def screenExited(_name, k) = k(())
+        }
+
     type alias RigidBodyInfo = {
         name = String,
         node = Node,
@@ -412,6 +435,12 @@ mod SceneTree {
         mapNode(name, node -> {
             let Node.MkNode(n, _, k, ch) = node;
             Node.MkNode(n, pos, k, ch)
+        }, root)
+
+    pub def updateNodePosition(name: String, f: Vec2D.Vec2 -> Vec2D.Vec2, root: Node): Node =
+        mapNode(name, node -> {
+            let Node.MkNode(n, pos, k, ch) = node;
+            Node.MkNode(n, f(pos), k, ch)
         }, root)
 
     pub def rigidBodyData(node: Node): Option[RigidBodyData] =

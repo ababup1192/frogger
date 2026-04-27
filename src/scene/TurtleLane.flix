@@ -104,15 +104,8 @@ mod TurtleLane {
     // ========================================================================
 
     def wrapSection(cfg: TurtleLaneConfig, secIdx: Int32, scene: SceneTree.Node): SceneTree.Node =
-        let sName = sectionName(cfg#laneIndex, secIdx);
-        match SceneTree.findNode(sName, scene) {
-            case Some(secNode) =>
-                let pos = SceneTree.nodePosition(secNode);
-                let newX = wrapX(pos#x, cfg#direction, cfg#turtleCount);
-                if (newX == pos#x) scene
-                else SceneTree.setNodePosition(sName, {x = newX, y = pos#y}, scene)
-            case None => scene
-        }
+        scene |> SceneTree.updateNodePosition(sectionName(cfg#laneIndex, secIdx), pos ->
+            {x = wrapX(pos#x, cfg#direction, cfg#turtleCount), y = pos#y})
 
     def wrapLane(cfg: TurtleLaneConfig, scene: SceneTree.Node): SceneTree.Node =
         List.range(0, cfg#sectionCount)

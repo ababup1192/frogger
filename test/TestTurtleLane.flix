@@ -259,12 +259,8 @@ def testTurtleMovesRightward(): Unit \ Assert =
     match SceneTree.findNode("T4_0", scene) {
         case Some(secNode) =>
             let initX = SceneTree.nodePosition(secNode)#x;
-            let moved = run {
-                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig())
-            } with handler SceneTree.OnCollision {
-                def bodyEntered(_name, _pos, _body, k) = k(())
-                def areaEntered(_name, _pos, _body, k) = k(())
-            };
+            let moved = SceneTree.runWithNoopCollision(() ->
+                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig()));
             match SceneTree.findNode("T4_0", moved) {
                 case Some(movedSec) => Assert.assertTrue(SceneTree.nodePosition(movedSec)#x > initX)
                 case None => bug!("T4_0 not found after move")
@@ -279,12 +275,8 @@ def testTurtleMovesLeftward(): Unit \ Assert =
     match SceneTree.findNode("T5_0", scene) {
         case Some(secNode) =>
             let initX = SceneTree.nodePosition(secNode)#x;
-            let moved = run {
-                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig())
-            } with handler SceneTree.OnCollision {
-                def bodyEntered(_name, _pos, _body, k) = k(())
-                def areaEntered(_name, _pos, _body, k) = k(())
-            };
+            let moved = SceneTree.runWithNoopCollision(() ->
+                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig()));
             match SceneTree.findNode("T5_0", moved) {
                 case Some(movedSec) => Assert.assertTrue(SceneTree.nodePosition(movedSec)#x < initX)
                 case None => bug!("T5_0 not found after move")

@@ -111,15 +111,8 @@ mod VehicleLane {
     // ========================================================================
 
     def wrapVehicle(cfg: LaneConfig, vIdx: Int32, scene: SceneTree.Node): SceneTree.Node =
-        let vName = vehicleName(cfg#laneIndex, vIdx);
-        match SceneTree.findNode(vName, scene) {
-            case Some(vehicle) =>
-                let pos = SceneTree.nodePosition(vehicle);
-                let newX = wrapX(pos#x, cfg#direction);
-                if (newX == pos#x) scene
-                else SceneTree.setNodePosition(vName, {x = newX, y = pos#y}, scene)
-            case None => scene
-        }
+        scene |> SceneTree.updateNodePosition(vehicleName(cfg#laneIndex, vIdx), pos ->
+            {x = wrapX(pos#x, cfg#direction), y = pos#y})
 
     def wrapLane(cfg: LaneConfig, scene: SceneTree.Node): SceneTree.Node =
         List.range(0, cfg#vehicleCount)

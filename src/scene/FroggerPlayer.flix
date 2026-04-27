@@ -31,9 +31,9 @@ mod FroggerPlayer {
 
     pub def playerName(): String = "Player"
 
-    pub def playerHitboxSize(): Vec2D.Vec2 = {x = 48.0f32, y = 36.0f32}
+    pub def playerHitboxSize(): Vec2D.Vec2 = {x = 32.0f32, y = 24.0f32}
 
-    pub def playerHitboxOffset(): Vec2D.Vec2 = {x = 8.0f32, y = 14.0f32}
+    pub def playerHitboxOffset(): Vec2D.Vec2 = {x = 16.0f32, y = 20.0f32}
 
     /// プレイヤーのスプライト中心座標を返す（プラットフォーム乗り判定用）
     pub def playerCenter(pos: Vec2D.Vec2): Vec2D.Vec2 =
@@ -54,8 +54,7 @@ mod FroggerPlayer {
                                             animations = playerAnimations(),
                                             initialAnimation = "idle"})
             |> AnimatedSprite2D.fps(4.0f32);
-        let hitboxShape = SceneTree.collisionShape2D("Shape",
-                            SceneTree.CollisionShapeData.RectShape(playerHitboxSize()));
+        let hitboxShape = Shape2D.rect({name = "Shape", size = playerHitboxSize()});
         let hitbox = Area2D.init({name = SceneTree.childName(Child.Hitbox),
                                   pos = playerHitboxOffset(),
                                   children = hitboxShape :: Nil});
@@ -89,14 +88,14 @@ mod FroggerPlayer {
 
     pub def showDeathSprite(scene: SceneTree.Node): SceneTree.Node =
         SceneTree.updateChildAnimatedSprite(playerName(),
-            asd -> {currentAnimation = "dead", currentFrame = 0, frameTimer = 0.0f32, playing = false, rotation = 0.0f32 | asd}, scene)
+            AnimatedSprite2D.switchAnimation("dead", false), scene)
 
     pub def respawn(scene: SceneTree.Node): SceneTree.Node =
         scene
             |> SceneTree.setNodePosition(playerName(), startPos())
             |> SceneTree.updateCharacterBody(playerName(), cbd -> {targetPos = startPos() | cbd})
             |> SceneTree.updateChildAnimatedSprite(playerName(),
-                asd -> {currentAnimation = "idle", currentFrame = 0, frameTimer = 0.0f32, playing = true, rotation = 0.0f32 | asd})
+                AnimatedSprite2D.switchAnimation("idle", true))
 
     // ========================================================================
     // Movement State Query

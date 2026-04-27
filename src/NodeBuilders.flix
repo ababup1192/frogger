@@ -97,6 +97,14 @@ mod AnimatedSprite2D {
     pub def animation(v: String, node: SceneTree.Node): SceneTree.Node =
         modify(asd -> {currentAnimation = v | asd}, node)
 
+    /// アニメーション切替用のデータ変換関数。
+    /// updateChildAnimatedSprite 等と組み合わせて使う。
+    /// フレーム・タイマーをリセットし、回転を0にする。
+    pub def switchAnimation(animName: String, isPlaying: Bool):
+            SceneTree.AnimatedSpriteData -> SceneTree.AnimatedSpriteData =
+        asd -> {currentAnimation = animName, currentFrame = 0,
+                frameTimer = 0.0f32, playing = isPlaying, rotation = 0.0f32 | asd}
+
     pub def flipH(v: Bool, node: SceneTree.Node): SceneTree.Node =
         modify(asd -> {flipH = v | asd}, node)
 
@@ -481,4 +489,19 @@ mod Button2D {
 mod CanvasLayer2D {
     pub def init(req: {name = String, children = List[SceneTree.Node]}): SceneTree.Node =
         SceneTree.canvasLayer(req#name, req#children)
+}
+
+// ========================================================================
+// Shape2D — collision shape builders
+// ========================================================================
+
+mod Shape2D {
+    pub def rect(req: {name = String, size = Vec2D.Vec2}): SceneTree.Node =
+        SceneTree.collisionShape2D(req#name, SceneTree.CollisionShapeData.RectShape(req#size))
+
+    pub def circle(req: {name = String, radius = Float32}): SceneTree.Node =
+        SceneTree.collisionShape2D(req#name, SceneTree.CollisionShapeData.CircleShape(req#radius))
+
+    pub def capsule(req: {name = String, radius = Float32, height = Float32}): SceneTree.Node =
+        SceneTree.collisionShape2D(req#name, SceneTree.CollisionShapeData.CapsuleShape(req#radius, req#height))
 }

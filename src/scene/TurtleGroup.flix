@@ -35,8 +35,7 @@ mod TurtleGroup {
     /// direction: 流れる方向（負=左向き、正=右向き）でスプライトを反転する
     pub def build(name: String, pos: Vec2D.Vec2, turtleCount: Int32, direction: Float32): SceneTree.Node =
         let sprites = buildSprites(turtleCount, direction);
-        let shape = SceneTree.collisionShape2D("Shape",
-                        SceneTree.CollisionShapeData.RectShape(size(turtleCount)));
+        let shape = Shape2D.rect({name = "Shape", size = size(turtleCount)});
         Area2D.init({name = name, pos = pos,
                      children = List.append(sprites, shape :: Nil)})
 }

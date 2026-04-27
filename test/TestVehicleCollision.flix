@@ -135,9 +135,6 @@ def testDeathTimerNotFiredEarly(): Unit \ Assert =
 def testDeathTimerStopsAfterFiring(): Unit \ Assert =
     let scene = FroggerScene.buildInitialScene()
         |> SceneTree.startTimer(FroggerScene.deathTimerName());
-    let result = run {
-        SceneTree.stepTimers(2.5f32, scene)
-    } with handler SceneTree.OnTimeout {
-        def timeout(_name, k) = k(())
-    };
+    let result = SceneTree.runWithNoopTimeout(() ->
+        SceneTree.stepTimers(2.5f32, scene));
     Assert.assertFalse(FroggerScene.isPlayerDead(result))

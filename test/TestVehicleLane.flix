@@ -162,12 +162,8 @@ def testPhysicsMovesLeftward(): Unit \ Assert =
     match SceneTree.findNode("V0_0", scene) {
         case Some(v) =>
             let initX = SceneTree.nodePosition(v)#x;
-            let moved = run {
-                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig())
-            } with handler SceneTree.OnCollision {
-                def bodyEntered(_name, _pos, _body, k) = k(())
-                def areaEntered(_name, _pos, _body, k) = k(())
-            };
+            let moved = SceneTree.runWithNoopCollision(() ->
+                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig()));
             match SceneTree.findNode("V0_0", moved) {
                 case Some(v2) => Assert.assertTrue(SceneTree.nodePosition(v2)#x < initX)
                 case None     => Assert.assertTrue(false)
@@ -182,12 +178,8 @@ def testPhysicsMovesRightward(): Unit \ Assert =
     match SceneTree.findNode("V1_0", scene) {
         case Some(v) =>
             let initX = SceneTree.nodePosition(v)#x;
-            let moved = run {
-                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig())
-            } with handler SceneTree.OnCollision {
-                def bodyEntered(_name, _pos, _body, k) = k(())
-                def areaEntered(_name, _pos, _body, k) = k(())
-            };
+            let moved = SceneTree.runWithNoopCollision(() ->
+                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig()));
             match SceneTree.findNode("V1_0", moved) {
                 case Some(v2) => Assert.assertTrue(SceneTree.nodePosition(v2)#x > initX)
                 case None     => Assert.assertTrue(false)

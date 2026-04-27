@@ -105,15 +105,8 @@ mod WaterLane {
     // ========================================================================
 
     def wrapLog(cfg: LogLaneConfig, logIdx: Int32, scene: SceneTree.Node): SceneTree.Node =
-        let lName = logName(cfg#laneIndex, logIdx);
-        match SceneTree.findNode(lName, scene) {
-            case Some(logNode) =>
-                let pos = SceneTree.nodePosition(logNode);
-                let newX = wrapX(pos#x, cfg#direction, cfg#segments);
-                if (newX == pos#x) scene
-                else SceneTree.setNodePosition(lName, {x = newX, y = pos#y}, scene)
-            case None => scene
-        }
+        scene |> SceneTree.updateNodePosition(logName(cfg#laneIndex, logIdx), pos ->
+            {x = wrapX(pos#x, cfg#direction, cfg#segments), y = pos#y})
 
     def wrapLane(cfg: LogLaneConfig, scene: SceneTree.Node): SceneTree.Node =
         List.range(0, cfg#logCount)

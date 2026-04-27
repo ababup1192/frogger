@@ -262,12 +262,8 @@ def testPhysicsStepKinematicBody(): Unit \ Assert =
     );
     let root = node2D("Root", Vec2D.zero(), paddle :: Nil);
     let config = {screenSize = {x = 800.0f32, y = 600.0f32}};
-    let newRoot = run {
-        SceneTree.stepAndCollide(root, 0.1f32, config)
-    } with handler SceneTree.OnCollision {
-        def bodyEntered(_, _, _, k) = k(())
-        def areaEntered(_, _, _, k) = k(())
-    };
+    let newRoot = SceneTree.runWithNoopCollision(() ->
+        SceneTree.stepAndCollide(root, 0.1f32, config));
     let pos = SceneTree.globalPosition("Paddle", newRoot);
     let px = pos |> Option.map(p -> p#x);
     Assert.assertEq(expected = Some(150.0f32), px)
@@ -471,12 +467,8 @@ def testNonPlainNodeDoesNotRecursePhysics(): Unit \ Assert =
     );
     let root = node2D("Root", Vec2D.zero(), outerKinematic :: Nil);
     let config = {screenSize = {x = 800.0f32, y = 600.0f32}};
-    let newRoot = run {
-        SceneTree.stepAndCollide(root, 1.0f32, config)
-    } with handler SceneTree.OnCollision {
-        def bodyEntered(_, _, _, k) = k(())
-        def areaEntered(_, _, _, k) = k(())
-    };
+    let newRoot = SceneTree.runWithNoopCollision(() ->
+        SceneTree.stepAndCollide(root, 1.0f32, config));
     let innerPos = SceneTree.findNode("Inner", newRoot) |> Option.map(SceneTree.nodePosition);
     let px = innerPos |> Option.map(p -> p#x);
     Assert.assertEq(expected = Some(50.0f32), px)
@@ -521,12 +513,8 @@ def testKinematicBodyStopsAtScreenEdge(): Unit \ Assert =
     );
     let root = node2D("Root", Vec2D.zero(), body :: Nil);
     let config = {screenSize = {x = 800.0f32, y = 600.0f32}};
-    let newRoot = run {
-        SceneTree.stepAndCollide(root, 0.1f32, config)
-    } with handler SceneTree.OnCollision {
-        def bodyEntered(_, _, _, k) = k(())
-        def areaEntered(_, _, _, k) = k(())
-    };
+    let newRoot = SceneTree.runWithNoopCollision(() ->
+        SceneTree.stepAndCollide(root, 0.1f32, config));
     let pos = SceneTree.globalPosition("Player", newRoot);
     let px = pos |> Option.map(p -> p#x);
     Assert.assertEq(expected = Some(0.0f32), px)
@@ -560,12 +548,8 @@ def testRigidBodyReflectsOffLeftWall(): Unit \ Assert =
     );
     let root = node2D("Root", Vec2D.zero(), body :: Nil);
     let config = {screenSize = {x = 800.0f32, y = 600.0f32}};
-    let newRoot = run {
-        SceneTree.stepAndCollide(root, 0.1f32, config)
-    } with handler SceneTree.OnCollision {
-        def bodyEntered(_, _, _, k) = k(())
-        def areaEntered(_, _, _, k) = k(())
-    };
+    let newRoot = SceneTree.runWithNoopCollision(() ->
+        SceneTree.stepAndCollide(root, 0.1f32, config));
     let pos = SceneTree.globalPosition("Projectile", newRoot);
     let px = pos |> Option.map(p -> p#x);
     Assert.assertEq(expected = Some(0.0f32), px);
@@ -621,12 +605,8 @@ def testStaticBodyDoesNotMove(): Unit \ Assert =
     );
     let root = node2D("Root", Vec2D.zero(), body :: Nil);
     let config = {screenSize = {x = 800.0f32, y = 600.0f32}};
-    let newRoot = run {
-        SceneTree.stepAndCollide(root, 1.0f32, config)
-    } with handler SceneTree.OnCollision {
-        def bodyEntered(_, _, _, k) = k(())
-        def areaEntered(_, _, _, k) = k(())
-    };
+    let newRoot = SceneTree.runWithNoopCollision(() ->
+        SceneTree.stepAndCollide(root, 1.0f32, config));
     let pos = SceneTree.globalPosition("Wall", newRoot);
     let px = pos |> Option.map(p -> p#x);
     let py = pos |> Option.map(p -> p#y);
@@ -769,12 +749,8 @@ def testRigidBodyGravityScaleZeroLinearMove(): Unit \ Assert =
     );
     let root = node2D("Root", Vec2D.zero(), body :: Nil);
     let config = {screenSize = {x = 480.0f32, y = 720.0f32}};
-    let newRoot = run {
-        SceneTree.stepAndCollide(root, 1.0f32, config)
-    } with handler SceneTree.OnCollision {
-        def bodyEntered(_, _, _, k) = k(())
-        def areaEntered(_, _, _, k) = k(())
-    };
+    let newRoot = SceneTree.runWithNoopCollision(() ->
+        SceneTree.stepAndCollide(root, 1.0f32, config));
     let pos = SceneTree.globalPosition("Mob", newRoot) |> Option.getWithDefault(Vec2D.zero());
     Assert.assertEq(expected = 400.0f32, pos#x);
     Assert.assertEq(expected = 50.0f32, pos#y)
@@ -788,12 +764,8 @@ def testRigidBodyGravityScaleZeroNoBounce(): Unit \ Assert =
     );
     let root = node2D("Root", Vec2D.zero(), body :: Nil);
     let config = {screenSize = {x = 480.0f32, y = 720.0f32}};
-    let newRoot = run {
-        SceneTree.stepAndCollide(root, 1.0f32, config)
-    } with handler SceneTree.OnCollision {
-        def bodyEntered(_, _, _, k) = k(())
-        def areaEntered(_, _, _, k) = k(())
-    };
+    let newRoot = SceneTree.runWithNoopCollision(() ->
+        SceneTree.stepAndCollide(root, 1.0f32, config));
     let pos = SceneTree.globalPosition("Mob", newRoot) |> Option.getWithDefault(Vec2D.zero());
     // Should be -190 (no clamping, no bounce)
     Assert.assertTrue(pos#x < 0.0f32)
