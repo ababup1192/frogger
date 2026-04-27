@@ -134,12 +134,12 @@ isJustPressed(key) = isKeyPressed(key) AND NOT prevKeys.contains(key)
 
 ---
 
-### - [ ] Phase 4: 車レーン
-- [ ] `VehicleLane.flix` を作成
-- [ ] 車両の水平スクロール（RigidBody2D or Area2D + velocity）
-- [ ] 画面端でワープ（反対側に再出現）
-- [ ] 5レーン分のデータ定義（速度、方向、車種、台数、間隔）
-- [ ] `flix run` で5レーンに車が流れる
+### - [x] Phase 4: 車レーン
+- [x] `VehicleLane.flix` を作成
+- [x] 車両の水平スクロール（Sprite2D + カスタム stepFrame）
+- [x] 画面端でワープ（反対側に再出現）
+- [x] 5レーン分のデータ定義（速度、方向、車種、台数、間隔）
+- [x] `flix run` で5レーンに車が流れる
 
 **確認ポイント**: 各レーンで異なる車が異なる速度・方向でスクロール
 

@@ -152,16 +152,23 @@ def testInitialXRightMovingVehicle1(): Unit \ Assert =
     Assert.assertEq(expected = 150.0f32, VehicleLane.initialX(cfg, 1))
 
 // ========================================================================
-// stepFrame movement tests
+// stepAndCollide movement tests — engine physics moves Area2D by velocity
 // ========================================================================
 
 @Test
-def testStepFrameMovesLeftward(): Unit \ Assert =
+def testPhysicsMovesLeftward(): Unit \ Assert =
+    // V0_0 はレーン0で左方向 (speed=200, direction=-1) なので、dt後に左に移動する
     let scene = SceneTree.node2D("Root", Vec2D.zero(), VehicleLane.buildVehicleLanes() :: Nil);
     match SceneTree.findNode("V0_0", scene) {
         case Some(v) =>
             let initX = SceneTree.nodePosition(v)#x;
-            match SceneTree.findNode("V0_0", VehicleLane.stepFrame(0.1f32, scene)) {
+            let moved = run {
+                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig())
+            } with handler SceneTree.OnCollision {
+                def bodyEntered(_name, _pos, _body, k) = k(())
+                def areaEntered(_name, _pos, _body, k) = k(())
+            };
+            match SceneTree.findNode("V0_0", moved) {
                 case Some(v2) => Assert.assertTrue(SceneTree.nodePosition(v2)#x < initX)
                 case None     => Assert.assertTrue(false)
             }
@@ -169,12 +176,19 @@ def testStepFrameMovesLeftward(): Unit \ Assert =
     }
 
 @Test
-def testStepFrameMovesRightward(): Unit \ Assert =
+def testPhysicsMovesRightward(): Unit \ Assert =
+    // V1_0 はレーン1で右方向 (speed=250, direction=1) なので、dt後に右に移動する
     let scene = SceneTree.node2D("Root", Vec2D.zero(), VehicleLane.buildVehicleLanes() :: Nil);
     match SceneTree.findNode("V1_0", scene) {
         case Some(v) =>
             let initX = SceneTree.nodePosition(v)#x;
-            match SceneTree.findNode("V1_0", VehicleLane.stepFrame(0.1f32, scene)) {
+            let moved = run {
+                SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig())
+            } with handler SceneTree.OnCollision {
+                def bodyEntered(_name, _pos, _body, k) = k(())
+                def areaEntered(_name, _pos, _body, k) = k(())
+            };
+            match SceneTree.findNode("V1_0", moved) {
                 case Some(v2) => Assert.assertTrue(SceneTree.nodePosition(v2)#x > initX)
                 case None     => Assert.assertTrue(false)
             }
@@ -182,24 +196,47 @@ def testStepFrameMovesRightward(): Unit \ Assert =
     }
 
 // ========================================================================
-// Vehicle texture tests
+// Vehicle texture tests — Sprite is now a child of the Area2D vehicle node
 // ========================================================================
 
 @Test
 def testLane0VehicleTexture(): Unit \ Assert =
+    // V0_0 は Area2D で、子ノード "Sprite" にテクスチャがある
     match SceneTree.findNode("V0_0", VehicleLane.buildVehicleLanes()) {
-        case Some(v) => match SceneTree.nodeKind(v) {
-            case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "Car1", sd#texture)
-            case _ => Assert.assertTrue(false)
-        }
+        case Some(v) =>
+            match SceneTree.findNode(VehicleLane.vehicleSpriteName(), v) {
+                case Some(sprite) => match SceneTree.nodeKind(sprite) {
+                    case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "Car1", sd#texture)
+                    case _ => Assert.assertTrue(false)
+                }
+                case None => Assert.assertTrue(false)
+            }
         case None => Assert.assertTrue(false)
     }
 
 @Test
 def testLane2VehicleTexture(): Unit \ Assert =
     match SceneTree.findNode("V2_0", VehicleLane.buildVehicleLanes()) {
+        case Some(v) =>
+            match SceneTree.findNode(VehicleLane.vehicleSpriteName(), v) {
+                case Some(sprite) => match SceneTree.nodeKind(sprite) {
+                    case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "Car3", sd#texture)
+                    case _ => Assert.assertTrue(false)
+                }
+                case None => Assert.assertTrue(false)
+            }
+        case None => Assert.assertTrue(false)
+    }
+
+// ========================================================================
+// Vehicle node kind test — vehicles are now Area2D
+// ========================================================================
+
+@Test
+def testVehicleIsArea2D(): Unit \ Assert =
+    match SceneTree.findNode("V0_0", VehicleLane.buildVehicleLanes()) {
         case Some(v) => match SceneTree.nodeKind(v) {
-            case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "Car3", sd#texture)
+            case SceneTree.NodeKind.Area(_) => Assert.assertTrue(true)
             case _ => Assert.assertTrue(false)
         }
         case None => Assert.assertTrue(false)

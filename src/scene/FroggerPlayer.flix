@@ -4,12 +4,14 @@ mod FroggerPlayer {
 
     pub enum Child with Eq, ToString {
         case Sprite
+        case Hitbox
     }
 
     instance SceneTree.SceneChild[Child] {
         pub def sceneName(_c: Child): String = FroggerPlayer.playerName()
         pub def childName(c: Child): String = match c {
             case Child.Sprite => "Sprite"
+            case Child.Hitbox => "Hitbox"
         }
     }
 
@@ -29,6 +31,10 @@ mod FroggerPlayer {
 
     pub def playerName(): String = "Player"
 
+    pub def playerHitboxSize(): Vec2D.Vec2 = {x = 48.0f32, y = 36.0f32}
+
+    pub def playerHitboxOffset(): Vec2D.Vec2 = {x = 8.0f32, y = 14.0f32}
+
     // ========================================================================
     // Node Builder
     // ========================================================================
@@ -37,7 +43,13 @@ mod FroggerPlayer {
         let sprite = Sprite2D.init({name = SceneTree.childName(Child.Sprite), pos = Vec2D.zero(),
                                     size = {x = cellSize(), y = cellSize()},
                                     texture = "FroggerIdle"});
-        CharacterBody2D.init({name = playerName(), pos = startPos(), children = sprite :: Nil})
+        let hitboxShape = SceneTree.collisionShape2D("Shape",
+                            SceneTree.CollisionShapeData.RectShape(playerHitboxSize()));
+        let hitbox = Area2D.init({name = SceneTree.childName(Child.Hitbox),
+                                  pos = playerHitboxOffset(),
+                                  children = hitboxShape :: Nil});
+        CharacterBody2D.init({name = playerName(), pos = startPos(),
+                              children = sprite :: hitbox :: Nil})
             |> CharacterBody2D.moveSpeed(moveSpeed())
 
     // ========================================================================
@@ -56,6 +68,19 @@ mod FroggerPlayer {
     pub def applyInput(dir: SceneTree.Direction, scene: SceneTree.Node): SceneTree.Node =
         SceneTree.updateCharacterBody(playerName(), cbd ->
             {targetPos = computeNewTarget(dir, cbd#targetPos) | cbd}, scene)
+
+    // ========================================================================
+    // Death & Respawn
+    // ========================================================================
+
+    pub def showDeathSprite(scene: SceneTree.Node): SceneTree.Node =
+        SceneTree.updateChildSprite(playerName(), sd -> {texture = "FroggerDead" | sd}, scene)
+
+    pub def respawn(scene: SceneTree.Node): SceneTree.Node =
+        scene
+            |> SceneTree.setNodePosition(playerName(), startPos())
+            |> SceneTree.updateCharacterBody(playerName(), cbd -> {targetPos = startPos() | cbd})
+            |> SceneTree.updateChildSprite(playerName(), sd -> {texture = "FroggerIdle" | sd})
 
     // ========================================================================
     // Frame Step — engine handles moveToward automatically

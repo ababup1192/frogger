@@ -42,11 +42,13 @@ mod VehicleLane {
     pub def vehicleName(laneIdx: Int32, vehicleIdx: Int32): String =
         "V${laneIdx}_${vehicleIdx}"
 
+    pub def vehicleSpriteName(): String = "Sprite"
+
     // ========================================================================
     // Vehicle size (matching Godot: 16x12 * 4 = 64x48)
     // ========================================================================
 
-    def vehicleSize(): Vec2D.Vec2 = {x = 64.0f32, y = 48.0f32}
+    pub def vehicleSize(): Vec2D.Vec2 = {x = 64.0f32, y = 48.0f32}
 
     // ========================================================================
     // Wrap boundaries — one car width buffer beyond each screen edge
@@ -84,16 +86,28 @@ mod VehicleLane {
             x
 
     // ========================================================================
+    // Build a single vehicle (Area2D + Sprite + CollisionShape)
+    // ========================================================================
+
+    def buildVehicle(cfg: LaneConfig, i: Int32): SceneTree.Node =
+        let sprite = Sprite2D.init({name = vehicleSpriteName(),
+                                    pos = Vec2D.zero(),
+                                    size = vehicleSize(),
+                                    texture = cfg#texture});
+        let shape = SceneTree.collisionShape2D("Shape",
+                        SceneTree.CollisionShapeData.RectShape(vehicleSize()));
+        Area2D.init({name = vehicleName(cfg#laneIndex, i),
+                     pos = {x = initialX(cfg, i), y = 0.0f32},
+                     children = sprite :: shape :: Nil})
+            |> Area2D.velocity({x = cfg#speed * cfg#direction, y = 0.0f32})
+
+    // ========================================================================
     // Build a single lane with its vehicles
     // ========================================================================
 
     def buildLane(cfg: LaneConfig): SceneTree.Node =
         List.range(0, cfg#vehicleCount)
-            |> List.map(i ->
-                Sprite2D.init({name = vehicleName(cfg#laneIndex, i),
-                               pos = {x = initialX(cfg, i), y = 0.0f32},
-                               size = vehicleSize(),
-                               texture = cfg#texture}))
+            |> List.map(i -> buildVehicle(cfg, i))
             |> SceneTree.node2D(laneName(cfg#laneIndex),
                                 {x = 0.0f32, y = laneY(cfg#laneIndex)})
 
@@ -107,23 +121,24 @@ mod VehicleLane {
             |> SceneTree.node2D(containerName(), Vec2D.zero())
 
     // ========================================================================
-    // Step frame — move each vehicle and wrap at screen edges
+    // Wrap vehicles — apply screen-edge wrapping (movement handled by engine)
     // ========================================================================
 
-    def stepVehicle(dt: Float32, cfg: LaneConfig, vIdx: Int32, scene: SceneTree.Node): SceneTree.Node =
+    def wrapVehicle(cfg: LaneConfig, vIdx: Int32, scene: SceneTree.Node): SceneTree.Node =
         let vName = vehicleName(cfg#laneIndex, vIdx);
         match SceneTree.findNode(vName, scene) {
             case Some(vehicle) =>
                 let pos = SceneTree.nodePosition(vehicle);
-                let newX = wrapX(pos#x + cfg#speed * cfg#direction * dt, cfg#direction);
-                SceneTree.setNodePosition(vName, {x = newX, y = pos#y}, scene)
+                let newX = wrapX(pos#x, cfg#direction);
+                if (newX == pos#x) scene
+                else SceneTree.setNodePosition(vName, {x = newX, y = pos#y}, scene)
             case None => scene
         }
 
-    def stepLane(dt: Float32, cfg: LaneConfig, scene: SceneTree.Node): SceneTree.Node =
+    def wrapLane(cfg: LaneConfig, scene: SceneTree.Node): SceneTree.Node =
         List.range(0, cfg#vehicleCount)
-            |> List.foldLeft((sc, i) -> stepVehicle(dt, cfg, i, sc), scene)
+            |> List.foldLeft((sc, i) -> wrapVehicle(cfg, i, sc), scene)
 
-    pub def stepFrame(dt: Float32, scene: SceneTree.Node): SceneTree.Node =
-        List.foldLeft((sc, cfg) -> stepLane(dt, cfg, sc), scene, laneConfigs())
+    pub def wrapVehicles(scene: SceneTree.Node): SceneTree.Node =
+        List.foldLeft((sc, cfg) -> wrapLane(cfg, sc), scene, laneConfigs())
 }

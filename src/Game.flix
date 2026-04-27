@@ -4,7 +4,8 @@ mod Game {
     pub type alias GameState = {
         scene    = SceneTree.Node,
         gameOver = Bool,
-        prevKeys = Set[Engine.Key]
+        prevKeys = Set[Engine.Key],
+        lives    = Int32
     }
 
     // ========================================================================
@@ -35,6 +36,7 @@ mod Game {
         {name = "Car3", path = "textures/Car3.png", hasAlpha = true} ::
         {name = "Car4", path = "textures/Car4.png", hasAlpha = true} ::
         {name = "Car5", path = "textures/Car5.png", hasAlpha = true} ::
+        {name = "FroggerDead", path = "textures/FroggerDead.png", hasAlpha = true} ::
         Nil
 
     // ========================================================================
@@ -98,7 +100,7 @@ mod Game {
 
     pub def initGame(): GameState =
         let scene = FroggerScene.buildInitialScene();
-        {scene = scene, gameOver = false, prevKeys = Set.empty()}
+        {scene = scene, gameOver = false, prevKeys = Set.empty(), lives = 3}
 
     // ========================================================================
     // Game Loop
@@ -106,11 +108,15 @@ mod Game {
 
     def processInput(state: GameState): GameState \ Engine.Game =
         let currKeys = collectPressedKeys();
-        let justPressed = justPressedKeys(currKeys, state#prevKeys);
-        {scene = match inputDirection(justPressed) {
-            case Some(dir) => FroggerScene.applyInput(dir, state#scene)
-            case None      => state#scene
-        }, prevKeys = currKeys | state}
+        if (FroggerScene.isPlayerDead(state#scene))
+            {prevKeys = currKeys | state}
+        else {
+            let justPressed = justPressedKeys(currKeys, state#prevKeys);
+            {scene = match inputDirection(justPressed) {
+                case Some(dir) => FroggerScene.applyInput(dir, state#scene)
+                case None      => state#scene
+            }, prevKeys = currKeys | state}
+        }
 
     pub def updateGame(state: GameState): GameState \ Engine.Game =
         (if (not state#gameOver) processInput(state) else state) |>
