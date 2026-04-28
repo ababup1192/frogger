@@ -102,18 +102,10 @@ mod CanvasPanel {
                     |> Sprite2D.color({r = 1.0f32, g = 1.0f32, b = 0.3f32}) :: Nil
             case _ => Nil
         };
-        // ノード名ラベル（デバッグモードのみ）
-        let labelNodes = if (debugView)
-            Label2D.init({name = "cv_lbl_${name}",
-                          pos = {x = globalX, y = globalY - 18.0f32},
-                          text = name, fontSize = 16.0f32,
-                          font = ViewerConfig.defaultFont()})
-                |> Label2D.color({r = 0.9f32, g = 0.9f32, b = 0.9f32}) :: Nil
-        else Nil;
         // 子ノードを再帰的に処理
         let childSprites = nodeChildren
             |> List.flatMap(child -> buildNodes(child, globalX, globalY, zoom, selectedNode, debugView));
-        List.append(highlight, List.append(spriteNodes, List.append(labelNodes, childSprites)))
+        List.append(highlight, List.append(spriteNodes, childSprites))
 
     /// デバッグモード: 色分け矩形で描画する
     def buildDebugSprite(name: String, kind: SceneTree.NodeKind,

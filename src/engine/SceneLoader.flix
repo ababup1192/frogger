@@ -47,6 +47,8 @@ mod SceneLoader {
             case "RectShape2D"      => buildRectShape2D(p, name, map)
             case "Node2D"           => buildNode2D(p, name, map)
             case "Sprite2D"         => buildSprite2D(p, name, map)
+            case "Label2D"          => buildLabel2D(p, name, map)
+            case "CanvasLayer2D"    => buildCanvasLayer2D(p, name, map)
             case unknown            => Err(JsonError(p, Set#{"known node type (got: ${unknown})"}))
         }
 
@@ -62,6 +64,24 @@ mod SceneLoader {
         ) yield {
             let (x, y) = pair;
             {x = x, y = y}
+        }
+
+    /// JSON配列 [r, g, b] を Option[Engine.Color] に変換する
+    def parseColorOpt(p: Path, key: String,
+                      map: Map[String, Json.JsonElement]): Result[Json.JsonError, Option[Engine.Color]] =
+        forM (
+            tripleOpt <- (Json.getAtKeyOpt(p, key, map): Result[Json.JsonError, Option[(Float32, Float32, Float32)]])
+        ) yield match tripleOpt {
+            case Some((r, g, b)) => Some({r = r, g = g, b = b})
+            case None            => None
+        }
+
+    /// オプション値が Some の場合のみノードに適用する
+    def optApply(opt: Option[a], f: a -> (SceneTree.Node -> SceneTree.Node),
+                 node: SceneTree.Node): SceneTree.Node =
+        match opt {
+            case Some(v) => f(v, node)
+            case None    => node
         }
 
     /// children 配列を再帰的にパースする。キーがなければ空リストを返す
@@ -172,4 +192,33 @@ mod SceneLoader {
                 case None    => node
             }
         }
+
+    /// Label2D ノードを構築する
+    def buildLabel2D(p: Path, name: String,
+                     map: Map[String, Json.JsonElement]): Result[Json.JsonError, SceneTree.Node] =
+        forA (
+            pos         <- parseVec2(p, "pos", map);
+            text        <- Json.getAtKey(p, "text", map);
+            fontSize    <- (Json.getAtKey(p, "fontSize", map): Result[Json.JsonError, Float32]);
+            font        <- Json.getAtKey(p, "font", map);
+            visibleOpt  <- (Json.getAtKeyOpt(p, "visible", map): Result[Json.JsonError, Option[Bool]]);
+            centeredOpt <- (Json.getAtKeyOpt(p, "centered", map): Result[Json.JsonError, Option[Bool]]);
+            colorOpt    <- parseColorOpt(p, "color", map)
+        ) yield {
+            let node = Label2D.init({name = name, pos = pos, text = text, fontSize = fontSize, font = font});
+            node
+                |> optApply(visibleOpt, Label2D.visible)
+                |> optApply(centeredOpt, Label2D.centered)
+                |> match colorOpt {
+                    case Some(c) => Label2D.color(c)
+                    case None    => identity
+                }
+        }
+
+    /// CanvasLayer2D ノードを構築する
+    def buildCanvasLayer2D(p: Path, name: String,
+                           map: Map[String, Json.JsonElement]): Result[Json.JsonError, SceneTree.Node] =
+        forA (
+            children <- parseChildren(p, map)
+        ) yield CanvasLayer2D.init({name = name, children = children})
 }

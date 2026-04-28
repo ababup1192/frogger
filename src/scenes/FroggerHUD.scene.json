@@ -1,0 +1,43 @@
+{
+  "type": "CanvasLayer2D",
+  "name": "HUD",
+  "children": [
+    {
+      "type": "Label2D",
+      "name": "LivesLabel",
+      "pos": [20, 920],
+      "text": "LIVES: 3",
+      "fontSize": 28,
+      "font": "textures/UDEVGothic-Regular.ttf"
+    },
+    {
+      "type": "Label2D",
+      "name": "TimerLabel",
+      "pos": [650, 920],
+      "text": "TIME: 30",
+      "fontSize": 28,
+      "font": "textures/UDEVGothic-Regular.ttf"
+    },
+    {
+      "type": "Label2D",
+      "name": "MessageLabel",
+      "pos": [392, 450],
+      "text": "",
+      "fontSize": 48,
+      "font": "textures/UDEVGothic-Regular.ttf",
+      "visible": false,
+      "centered": true,
+      "color": [1.0, 1.0, 0.0]
+    },
+    {
+      "type": "Label2D",
+      "name": "RestartLabel",
+      "pos": [392, 520],
+      "text": "",
+      "fontSize": 24,
+      "font": "textures/UDEVGothic-Regular.ttf",
+      "visible": false,
+      "centered": true
+    }
+  ]
+}

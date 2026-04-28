@@ -139,7 +139,7 @@ mod ViewerApp {
     /// ビューワー UI 全体を SceneTree.Node として構築する
     def buildViewerScene(state: ViewerState.State): SceneTree.Node =
         let tabBar = buildTabBar(state);
-        let treePanel = TreePanel.build(state#loadedScene, state#treeState);
+        let treePanel = TreePanel.build(state#loadedScene, state#treeState, state#debugView);
         let canvasPanel = CanvasPanel.build(state#loadedScene, state#canvasState, state#treeState#selectedNode, state#debugView);
         let helpBar = buildHelpBar(state);
         // パネル境界線
