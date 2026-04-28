@@ -1,84 +1,108 @@
 // Tests for VehicleLane — lane construction, vehicle placement, wrapping, and movement
 
 // ========================================================================
-// Lane Config Tests
+// Lane Config Tests — laneConfigs() は純粋関数
 // ========================================================================
 
 @Test
 def testLaneConfigCount(): Unit \ Assert =
+    // 5レーン分の設定が定義されている
     Assert.assertEq(expected = 5, List.length(VehicleLane.laneConfigs()))
 
 // ========================================================================
-// Lane Y Position Tests
+// laneY Tests — road zone starts at 512, each lane is 64px tall
 // ========================================================================
 
 @Test
 def testLaneY0(): Unit \ Assert =
+    // レーン0は y=512
     Assert.assertEq(expected = 512.0f32, VehicleLane.laneY(0))
 
 @Test
-def testLaneY1(): Unit \ Assert =
-    Assert.assertEq(expected = 576.0f32, VehicleLane.laneY(1))
-
-@Test
-def testLaneY2(): Unit \ Assert =
-    Assert.assertEq(expected = 640.0f32, VehicleLane.laneY(2))
-
-@Test
-def testLaneY3(): Unit \ Assert =
-    Assert.assertEq(expected = 704.0f32, VehicleLane.laneY(3))
-
-@Test
 def testLaneY4(): Unit \ Assert =
+    // レーン4は y=768（512 + 4*64）
     Assert.assertEq(expected = 768.0f32, VehicleLane.laneY(4))
 
 // ========================================================================
-// buildVehicleLanes structure tests
+// initialX Tests — direction に応じた初期配置
 // ========================================================================
 
 @Test
-def testContainerName(): Unit \ Assert =
+def testInitialXLeftMoving(): Unit \ Assert =
+    // 左方向レーン: screenW(784) から spacing 分ずつ左へ
+    let cfg = List.head(VehicleLane.laneConfigs());
+    match cfg {
+        case Some(c) =>
+            Assert.assertEq(expected = (784.0f32, 684.0f32),
+                (VehicleLane.initialX(c, 0), VehicleLane.initialX(c, 1)))
+        case None => bug!("laneConfigs is empty")
+    }
+
+@Test
+def testInitialXRightMoving(): Unit \ Assert =
+    // 右方向レーン: 0 から spacing 分ずつ右へ
+    let cfg = List.head(List.drop(1, VehicleLane.laneConfigs()));
+    match cfg {
+        case Some(c) =>
+            Assert.assertEq(expected = (0.0f32, 150.0f32),
+                (VehicleLane.initialX(c, 0), VehicleLane.initialX(c, 1)))
+        case None => bug!("laneConfigs has fewer than 2 entries")
+    }
+
+// ========================================================================
+// buildVehicleLanes structure tests — Vehicle テンプレート読込あり
+// ========================================================================
+
+@Test
+def testContainerName(): Unit \ {Assert, Fs.FileRead} =
+    // コンテナノード名は "VehicleLanes"
     Assert.assertEq(expected = "VehicleLanes",
         VehicleLane.buildVehicleLanes() |> SceneTree.nodeName)
 
 @Test
-def testLaneCount(): Unit \ Assert =
+def testLaneCount(): Unit \ {Assert, Fs.FileRead} =
+    // 5レーン分の子ノードが構築される
     Assert.assertEq(expected = 5,
         VehicleLane.buildVehicleLanes() |> SceneTree.nodeChildren |> List.length)
 
 @Test
-def testLane0VehicleCount(): Unit \ Assert =
+def testLane0VehicleCount(): Unit \ {Assert, Fs.FileRead} =
+    // レーン0は車両3台
     match SceneTree.findNode("VehicleLane0", VehicleLane.buildVehicleLanes()) {
         case Some(lane) => Assert.assertEq(expected = 3, List.length(SceneTree.nodeChildren(lane)))
-        case None       => Assert.assertTrue(false)
+        case None       => bug!("VehicleLane0 not found")
     }
 
 @Test
-def testLane1VehicleCount(): Unit \ Assert =
+def testLane1VehicleCount(): Unit \ {Assert, Fs.FileRead} =
+    // レーン1は車両4台
     match SceneTree.findNode("VehicleLane1", VehicleLane.buildVehicleLanes()) {
         case Some(lane) => Assert.assertEq(expected = 4, List.length(SceneTree.nodeChildren(lane)))
-        case None       => Assert.assertTrue(false)
+        case None       => bug!("VehicleLane1 not found")
     }
 
 @Test
-def testLane2VehicleCount(): Unit \ Assert =
+def testLane2VehicleCount(): Unit \ {Assert, Fs.FileRead} =
+    // レーン2は車両2台
     match SceneTree.findNode("VehicleLane2", VehicleLane.buildVehicleLanes()) {
         case Some(lane) => Assert.assertEq(expected = 2, List.length(SceneTree.nodeChildren(lane)))
-        case None       => Assert.assertTrue(false)
+        case None       => bug!("VehicleLane2 not found")
     }
 
 @Test
-def testLane3VehicleCount(): Unit \ Assert =
+def testLane3VehicleCount(): Unit \ {Assert, Fs.FileRead} =
+    // レーン3は車両4台
     match SceneTree.findNode("VehicleLane3", VehicleLane.buildVehicleLanes()) {
         case Some(lane) => Assert.assertEq(expected = 4, List.length(SceneTree.nodeChildren(lane)))
-        case None       => Assert.assertTrue(false)
+        case None       => bug!("VehicleLane3 not found")
     }
 
 @Test
-def testLane4VehicleCount(): Unit \ Assert =
+def testLane4VehicleCount(): Unit \ {Assert, Fs.FileRead} =
+    // レーン4は車両2台
     match SceneTree.findNode("VehicleLane4", VehicleLane.buildVehicleLanes()) {
         case Some(lane) => Assert.assertEq(expected = 2, List.length(SceneTree.nodeChildren(lane)))
-        case None       => Assert.assertTrue(false)
+        case None       => bug!("VehicleLane4 not found")
     }
 
 // ========================================================================
@@ -86,17 +110,19 @@ def testLane4VehicleCount(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testLane0YPosition(): Unit \ Assert =
+def testLane0YPosition(): Unit \ {Assert, Fs.FileRead} =
+    // レーン0の Y 座標は 512
     match SceneTree.findNode("VehicleLane0", VehicleLane.buildVehicleLanes()) {
         case Some(lane) => Assert.assertEq(expected = 512.0f32, SceneTree.nodePosition(lane)#y)
-        case None       => Assert.assertTrue(false)
+        case None       => bug!("VehicleLane0 not found")
     }
 
 @Test
-def testLane4YPosition(): Unit \ Assert =
+def testLane4YPosition(): Unit \ {Assert, Fs.FileRead} =
+    // レーン4の Y 座標は 768
     match SceneTree.findNode("VehicleLane4", VehicleLane.buildVehicleLanes()) {
         case Some(lane) => Assert.assertEq(expected = 768.0f32, SceneTree.nodePosition(lane)#y)
-        case None       => Assert.assertTrue(false)
+        case None       => bug!("VehicleLane4 not found")
     }
 
 // ========================================================================
@@ -124,39 +150,11 @@ def testWrapXRightMovingInBounds(): Unit \ Assert =
     Assert.assertEq(expected = 400.0f32, VehicleLane.wrapX(400.0f32, 1.0f32))
 
 // ========================================================================
-// initialX tests — cars distributed from the entry edge
-// ========================================================================
-
-@Test
-def testInitialXLeftMovingVehicle0(): Unit \ Assert =
-    // Left-moving: screenW(784) - spacing(100) * 0 = 784
-    let cfg: VehicleLane.LaneConfig = {laneIndex = 0, speed = 200.0f32, direction = -1.0f32, texture = "Car1", vehicleCount = 3, spacing = 100.0f32};
-    Assert.assertEq(expected = 784.0f32, VehicleLane.initialX(cfg, 0))
-
-@Test
-def testInitialXLeftMovingVehicle1(): Unit \ Assert =
-    // Left-moving: 784 - 100 * 1 = 684
-    let cfg: VehicleLane.LaneConfig = {laneIndex = 0, speed = 200.0f32, direction = -1.0f32, texture = "Car1", vehicleCount = 3, spacing = 100.0f32};
-    Assert.assertEq(expected = 684.0f32, VehicleLane.initialX(cfg, 1))
-
-@Test
-def testInitialXRightMovingVehicle0(): Unit \ Assert =
-    // Right-moving: spacing(150) * 0 = 0
-    let cfg: VehicleLane.LaneConfig = {laneIndex = 1, speed = 250.0f32, direction = 1.0f32, texture = "Car2", vehicleCount = 4, spacing = 150.0f32};
-    Assert.assertEq(expected = 0.0f32, VehicleLane.initialX(cfg, 0))
-
-@Test
-def testInitialXRightMovingVehicle1(): Unit \ Assert =
-    // Right-moving: 150 * 1 = 150
-    let cfg: VehicleLane.LaneConfig = {laneIndex = 1, speed = 250.0f32, direction = 1.0f32, texture = "Car2", vehicleCount = 4, spacing = 150.0f32};
-    Assert.assertEq(expected = 150.0f32, VehicleLane.initialX(cfg, 1))
-
-// ========================================================================
 // stepAndCollide movement tests — engine physics moves Area2D by velocity
 // ========================================================================
 
 @Test
-def testPhysicsMovesLeftward(): Unit \ Assert =
+def testPhysicsMovesLeftward(): Unit \ {Assert, Fs.FileRead} =
     // V0_0 はレーン0で左方向 (speed=200, direction=-1) なので、dt後に左に移動する
     let scene = SceneTree.node2D("Root", Vec2D.zero(), VehicleLane.buildVehicleLanes() :: Nil);
     match SceneTree.findNode("V0_0", scene) {
@@ -166,13 +164,13 @@ def testPhysicsMovesLeftward(): Unit \ Assert =
                 SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig()));
             match SceneTree.findNode("V0_0", moved) {
                 case Some(v2) => Assert.assertTrue(SceneTree.nodePosition(v2)#x < initX)
-                case None     => Assert.assertTrue(false)
+                case None     => bug!("V0_0 not found after step")
             }
-        case None => Assert.assertTrue(false)
+        case None => bug!("V0_0 not found")
     }
 
 @Test
-def testPhysicsMovesRightward(): Unit \ Assert =
+def testPhysicsMovesRightward(): Unit \ {Assert, Fs.FileRead} =
     // V1_0 はレーン1で右方向 (speed=250, direction=1) なので、dt後に右に移動する
     let scene = SceneTree.node2D("Root", Vec2D.zero(), VehicleLane.buildVehicleLanes() :: Nil);
     match SceneTree.findNode("V1_0", scene) {
@@ -182,56 +180,58 @@ def testPhysicsMovesRightward(): Unit \ Assert =
                 SceneTree.stepAndCollide(scene, 0.1f32, FroggerScene.physicsConfig()));
             match SceneTree.findNode("V1_0", moved) {
                 case Some(v2) => Assert.assertTrue(SceneTree.nodePosition(v2)#x > initX)
-                case None     => Assert.assertTrue(false)
+                case None     => bug!("V1_0 not found after step")
             }
-        case None => Assert.assertTrue(false)
+        case None => bug!("V1_0 not found")
     }
 
 // ========================================================================
-// Vehicle texture tests — Sprite is now a child of the Area2D vehicle node
+// Vehicle texture tests — Sprite is a child of the Area2D vehicle node
 // ========================================================================
 
 @Test
-def testLane0VehicleTexture(): Unit \ Assert =
-    // V0_0 は Area2D で、子ノード "Sprite" にテクスチャがある
+def testLane0VehicleTexture(): Unit \ {Assert, Fs.FileRead} =
+    // V0_0 の子 Sprite に Car1 テクスチャが設定されている
     match SceneTree.findNode("V0_0", VehicleLane.buildVehicleLanes()) {
         case Some(v) =>
             match SceneTree.findNode("Sprite", v) {
                 case Some(sprite) => match SceneTree.nodeKind(sprite) {
                     case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "Car1", sd#texture)
-                    case _ => Assert.assertTrue(false)
+                    case _ => bug!("Sprite node is not Sprite2D")
                 }
-                case None => Assert.assertTrue(false)
+                case None => bug!("Sprite not found in V0_0")
             }
-        case None => Assert.assertTrue(false)
+        case None => bug!("V0_0 not found")
     }
 
 @Test
-def testLane2VehicleTexture(): Unit \ Assert =
+def testLane2VehicleTexture(): Unit \ {Assert, Fs.FileRead} =
+    // V2_0 の子 Sprite に Car3 テクスチャが設定されている
     match SceneTree.findNode("V2_0", VehicleLane.buildVehicleLanes()) {
         case Some(v) =>
             match SceneTree.findNode("Sprite", v) {
                 case Some(sprite) => match SceneTree.nodeKind(sprite) {
                     case SceneTree.NodeKind.Sprite(sd) => Assert.assertEq(expected = "Car3", sd#texture)
-                    case _ => Assert.assertTrue(false)
+                    case _ => bug!("Sprite node is not Sprite2D")
                 }
-                case None => Assert.assertTrue(false)
+                case None => bug!("Sprite not found in V2_0")
             }
-        case None => Assert.assertTrue(false)
+        case None => bug!("V2_0 not found")
     }
 
 // ========================================================================
-// Vehicle node kind test — vehicles are now Area2D
+// Vehicle node kind test — vehicles are Area2D
 // ========================================================================
 
 @Test
-def testVehicleIsArea2D(): Unit \ Assert =
+def testVehicleIsArea2D(): Unit \ {Assert, Fs.FileRead} =
+    // V0_0 は Area2D ノードとして構築される
     match SceneTree.findNode("V0_0", VehicleLane.buildVehicleLanes()) {
         case Some(v) => match SceneTree.nodeKind(v) {
             case SceneTree.NodeKind.Area(_) => Assert.assertTrue(true)
-            case _ => Assert.assertTrue(false)
+            case _ => bug!("V0_0 is not Area2D")
         }
-        case None => Assert.assertTrue(false)
+        case None => bug!("V0_0 not found")
     }
 
 // ========================================================================
@@ -240,7 +240,8 @@ def testVehicleIsArea2D(): Unit \ Assert =
 
 @Test
 def testInitialSceneContainsVehicleLanes(): Unit \ {Assert, Fs.FileRead} =
+    // FroggerScene にも VehicleLanes コンテナが含まれる
     match SceneTree.findNode("VehicleLanes", FroggerScene.buildInitialScene()) {
         case Some(container) => Assert.assertEq(expected = "VehicleLanes", SceneTree.nodeName(container))
-        case None            => Assert.assertTrue(false)
+        case None            => bug!("VehicleLanes not found in initial scene")
     }

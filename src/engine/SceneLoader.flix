@@ -66,6 +66,16 @@ mod SceneLoader {
             {x = x, y = y}
         }
 
+    /// JSON配列 [x, y] をオプショナルに Vec2D.Vec2 に変換する（キーがなければ None）
+    def parseVec2Opt(p: Path, key: String,
+                     map: Map[String, Json.JsonElement]): Result[Json.JsonError, Option[Vec2D.Vec2]] =
+        forM (
+            pairOpt <- (Json.getAtKeyOpt(p, key, map): Result[Json.JsonError, Option[(Float32, Float32)]])
+        ) yield match pairOpt {
+            case Some((x, y)) => Some({x = x, y = y})
+            case None         => None
+        }
+
     /// JSON配列 [r, g, b] を Option[Engine.Color] に変換する
     def parseColorOpt(p: Path, key: String,
                       map: Map[String, Json.JsonElement]): Result[Json.JsonError, Option[Engine.Color]] =
@@ -154,13 +164,17 @@ mod SceneLoader {
             }
         }
 
-    /// Area2D ノードを構築する
+    /// Area2D ノードを構築する（velocity はオプション）
     def buildArea2D(p: Path, name: String,
                     map: Map[String, Json.JsonElement]): Result[Json.JsonError, SceneTree.Node] =
         forA (
-            pos      <- parseVec2(p, "pos", map);
-            children <- parseChildren(p, map)
-        ) yield Area2D.init({name = name, pos = pos, children = children})
+            pos         <- parseVec2(p, "pos", map);
+            velocityOpt <- parseVec2Opt(p, "velocity", map);
+            children    <- parseChildren(p, map)
+        ) yield {
+            let node = Area2D.init({name = name, pos = pos, children = children});
+            optApply(velocityOpt, Area2D.velocity, node)
+        }
 
     /// RectShape2D ノードを構築する
     def buildRectShape2D(p: Path, name: String,

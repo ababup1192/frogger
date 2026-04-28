@@ -31,6 +31,17 @@ mod VehicleLane {
         512.0f32 + Int32.toFloat32(index) * 64.0f32
 
     // ========================================================================
+    // Initial X placement — distribute vehicles from the entry edge
+    // ========================================================================
+
+    pub def initialX(cfg: LaneConfig, i: Int32): Float32 =
+        let fi = Int32.toFloat32(i);
+        if (cfg#direction < 0.0f32)
+            screenW() - cfg#spacing * fi
+        else
+            cfg#spacing * fi
+
+    // ========================================================================
     // Naming Helpers
     // ========================================================================
 
@@ -60,19 +71,6 @@ mod VehicleLane {
     pub def wrapMax(): Float32 = screenW() + 100.0f32
 
     // ========================================================================
-    // Initial X placement — distribute cars from the entry edge
-    // ========================================================================
-
-    pub def initialX(cfg: LaneConfig, i: Int32): Float32 =
-        let fi = Int32.toFloat32(i);
-        if (cfg#direction < 0.0f32)
-            // Left-moving: start from right side of screen
-            screenW() - cfg#spacing * fi
-        else
-            // Right-moving: start from left side of screen
-            cfg#spacing * fi
-
-    // ========================================================================
     // Wrap logic — direction-aware, asymmetric for 0..784 screen
     // ========================================================================
 
@@ -85,11 +83,11 @@ mod VehicleLane {
             x
 
     // ========================================================================
-    // Build a single vehicle — delegate to Vehicle.build
+    // Build a single vehicle — delegate to Vehicle.build + set velocity
     // ========================================================================
 
-    def buildVehicle(cfg: LaneConfig, i: Int32): SceneTree.Node =
-        Vehicle.build(vehicleName(cfg#laneIndex, i),
+    def buildVehicle(vehicleConfig: Vehicle.Config, cfg: LaneConfig, i: Int32): SceneTree.Node =
+        Vehicle.build(vehicleConfig, vehicleName(cfg#laneIndex, i),
                       {x = initialX(cfg, i), y = 0.0f32},
                       cfg#texture)
             |> Area2D.velocity({x = cfg#speed * cfg#direction, y = 0.0f32})
@@ -98,9 +96,9 @@ mod VehicleLane {
     // Build a single lane with its vehicles
     // ========================================================================
 
-    def buildLane(cfg: LaneConfig): SceneTree.Node =
+    def buildLane(vehicleConfig: Vehicle.Config, cfg: LaneConfig): SceneTree.Node =
         List.range(0, cfg#vehicleCount)
-            |> List.map(i -> buildVehicle(cfg, i))
+            |> List.map(i -> buildVehicle(vehicleConfig, cfg, i))
             |> SceneTree.node2D(laneName(cfg#laneIndex),
                                 {x = 0.0f32, y = laneY(cfg#laneIndex)})
 
@@ -108,17 +106,20 @@ mod VehicleLane {
     // Build all vehicle lanes as a container Node2D
     // ========================================================================
 
-    pub def buildVehicleLanes(): SceneTree.Node =
+    /// 全車両レーンを構築する（Vehicle テンプレートを1回読み込み、全レーンに適用）
+    pub def buildVehicleLanes(): SceneTree.Node \ Fs.FileRead =
+        let template = Vehicle.loadTemplate();
+        let vehicleConfig = Vehicle.loadConfig(template);
         laneConfigs()
-            |> List.map(buildLane)
+            |> List.map(cfg -> buildLane(vehicleConfig, cfg))
             |> SceneTree.node2D(containerName(), Vec2D.zero())
 
     // ========================================================================
     // Wrap vehicles — apply screen-edge wrapping (movement handled by engine)
     // ========================================================================
 
-    def wrapVehicle(cfg: LaneConfig, vIdx: Int32, scene: SceneTree.Node): SceneTree.Node =
-        scene |> SceneTree.updateNodePosition(vehicleName(cfg#laneIndex, vIdx), pos ->
+    def wrapVehicle(cfg: LaneConfig, vehicleIdx: Int32, scene: SceneTree.Node): SceneTree.Node =
+        scene |> SceneTree.updateNodePosition(vehicleName(cfg#laneIndex, vehicleIdx), pos ->
             {x = wrapX(pos#x, cfg#direction), y = pos#y})
 
     def wrapLane(cfg: LaneConfig, scene: SceneTree.Node): SceneTree.Node =

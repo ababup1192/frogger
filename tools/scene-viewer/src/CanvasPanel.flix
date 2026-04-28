@@ -73,38 +73,74 @@ mod CanvasPanel {
         let panY = canvasState#panOffset#y;
         let originX = panelX() + panX;
         let originY = panelY() + panY;
-        let children = buildNodes(scene, originX, originY, zoom, selectedNode, debugView);
+        let children = match (selectedNode, debugView) {
+            case (Some(name), false) =>
+                // テクスチャモードで選択中 → サブツリーだけ描画
+                match (SceneTree.findNode(name, scene), SceneTree.globalPosition(name, scene)) {
+                    case (Some(subTree), Some(gp)) =>
+                        let nodePos = SceneTree.nodePosition(subTree);
+                        let parentGX = gp#x - nodePos#x;
+                        let parentGY = gp#y - nodePos#y;
+                        buildNodes(subTree, originX + parentGX * zoom, originY + parentGY * zoom, zoom, selectedNode, debugView)
+                    case _ =>
+                        buildNodes(scene, originX, originY, zoom, selectedNode, debugView)
+                }
+            case _ =>
+                buildNodes(scene, originX, originY, zoom, selectedNode, debugView)
+        };
         SceneTree.node2D("CanvasPanel", Vec2D.zero(), children)
 
     /// ノードツリーを再帰的に走査し、各ノードを描画する
     def buildNodes(node: SceneTree.Node, parentX: Float32, parentY: Float32,
                    zoom: Float32, selectedNode: Option[String],
                    debugView: Bool): List[SceneTree.Node] =
+        buildNodesHelper(node, parentX, parentY, zoom, selectedNode, debugView, false)
+
+    /// showShapes: テクスチャモードで Shape を描画するか
+    def buildNodesHelper(node: SceneTree.Node, parentX: Float32, parentY: Float32,
+                         zoom: Float32, selectedNode: Option[String],
+                         debugView: Bool, showShapes: Bool): List[SceneTree.Node] =
         let SceneTree.Node.MkNode(name, pos, kind, nodeChildren) = node;
         let globalX = parentX + pos#x * zoom;
         let globalY = parentY + pos#y * zoom;
+        // 自ノードが選択中の Shape なら描画する
+        let isSelected = match selectedNode {
+            case Some(sel) => sel == name
+            case None => false
+        };
+        let selfShowShapes = showShapes or match kind {
+            case SceneTree.NodeKind.Shape(_) => isSelected
+            case _ => false
+        };
         // テクスチャモード or デバッグモードで描画内容を切り替え
         let spriteNodes = if (debugView)
             buildDebugSprite(name, kind, globalX, globalY, zoom)
         else
-            buildTextureSprite(name, kind, globalX, globalY, zoom);
-        // 選択中ノードのハイライト
-        let visual = NodeVisual.visualForKind(kind);
-        let scaledW = visual#size#x * zoom;
-        let scaledH = visual#size#y * zoom;
-        let highlight = match selectedNode {
-            case Some(sel) if sel == name =>
-                let pad = 3.0f32;
-                Sprite2D.init({name = "cv_hl_${name}",
-                               pos = {x = globalX - pad, y = globalY - pad},
-                               size = {x = scaledW + pad * 2.0f32, y = scaledH + pad * 2.0f32},
-                               texture = "white"})
-                    |> Sprite2D.color({r = 1.0f32, g = 1.0f32, b = 0.3f32}) :: Nil
-            case _ => Nil
+            buildTextureSprite(name, kind, globalX, globalY, zoom, selfShowShapes);
+        // 選択中ノードのハイライト（デバッグモードのみ）
+        let highlight = if (debugView) {
+            let visual = NodeVisual.visualForKind(kind);
+            let scaledW = visual#size#x * zoom;
+            let scaledH = visual#size#y * zoom;
+            match selectedNode {
+                case Some(sel) if sel == name =>
+                    let pad = 3.0f32;
+                    Sprite2D.init({name = "cv_hl_${name}",
+                                   pos = {x = globalX - pad, y = globalY - pad},
+                                   size = {x = scaledW + pad * 2.0f32, y = scaledH + pad * 2.0f32},
+                                   texture = "white"})
+                        |> Sprite2D.color({r = 1.0f32, g = 1.0f32, b = 0.3f32}) :: Nil
+                case _ => Nil
+            }
+        } else Nil;
+        // 選択中の Area2D なら子の Shape を表示する
+        let childShowShapes = match kind {
+            case SceneTree.NodeKind.Area(_) => isSelected
+            case _ => false
         };
         // 子ノードを再帰的に処理
         let childSprites = nodeChildren
-            |> List.flatMap(child -> buildNodes(child, globalX, globalY, zoom, selectedNode, debugView));
+            |> List.flatMap(child -> buildNodesHelper(child, globalX, globalY, zoom, selectedNode, debugView, childShowShapes));
         List.append(highlight, List.append(spriteNodes, childSprites))
 
     /// デバッグモード: 色分け矩形で描画する
@@ -119,7 +155,8 @@ mod CanvasPanel {
 
     /// テクスチャモード: スプライトの実テクスチャで描画する
     def buildTextureSprite(name: String, kind: SceneTree.NodeKind,
-                           globalX: Float32, globalY: Float32, zoom: Float32): List[SceneTree.Node] =
+                           globalX: Float32, globalY: Float32, zoom: Float32,
+                           showShapes: Bool): List[SceneTree.Node] =
         match kind {
             // Sprite2D: 実テクスチャを使用
             case SceneTree.NodeKind.Sprite(sd) =>
@@ -128,17 +165,35 @@ mod CanvasPanel {
                 Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
                                size = {x = scaledW, y = scaledH}, texture = sd#texture})
                     |> Sprite2D.color(sd#color) :: Nil
-            // AnimatedSprite2D: 現在のアニメーションの最初のフレームを使用
+            // AnimatedSprite2D: 現在のフレームのテクスチャを使用
             case SceneTree.NodeKind.AnimatedSprite(asd) =>
                 let scaledW = asd#size#x * zoom;
                 let scaledH = asd#size#y * zoom;
                 let texture = asd#animations
                     |> Map.get(asd#currentAnimation)
-                    |> Option.flatMap(entry -> List.head(entry#frames))
+                    |> Option.flatMap(entry -> List.nth(asd#currentFrame, entry#frames))
                     |> Option.getWithDefault("white");
                 Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
                                size = {x = scaledW, y = scaledH}, texture = texture})
                     |> Sprite2D.color(asd#color) :: Nil
+            // Label: テキストを描画（空文字の場合はサンプルテキストを表示）
+            case SceneTree.NodeKind.Label(ld) =>
+                let displayText = if (ld#text == "") "Sample Text" else ld#text;
+                let scaledFontSize = ld#fontSize * zoom;
+                Label2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
+                              text = displayText, fontSize = scaledFontSize, font = ld#font})
+                    |> Label2D.color(ld#color)
+                    |> Label2D.centered(ld#centered) :: Nil
+            // Shape: 選択時のみ赤い矩形で描画
+            case SceneTree.NodeKind.Shape(shapeData) if showShapes =>
+                let sz = match shapeData {
+                    case SceneTree.CollisionShapeData.RectShape(size) => size
+                    case SceneTree.CollisionShapeData.CircleShape(r) => {x = r * 2.0f32, y = r * 2.0f32}
+                    case SceneTree.CollisionShapeData.CapsuleShape(r, h) => {x = r * 2.0f32, y = h}
+                };
+                Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
+                               size = {x = sz#x * zoom, y = sz#y * zoom}, texture = "white"})
+                    |> Sprite2D.color({r = 1.0f32, g = 0.2f32, b = 0.2f32}) :: Nil
             // その他のノード（CharacterBody, Area 等）はテクスチャモードでは非表示
             case _ => Nil
         }

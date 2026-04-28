@@ -60,10 +60,11 @@ mod ViewerApp {
         // ファイル切り替え（Tab / Shift+Tab）
         let afterSwitch =
             if (Set.memberOf(Engine.Key.Tab, jp)) {
-                if (isShiftHeld(currKeys))
+                let switched = if (isShiftHeld(currKeys))
                     SceneBrowser.switchPrev(state)
                 else
-                    SceneBrowser.switchNext(state)
+                    SceneBrowser.switchNext(state);
+                ensureTabVisible(switched)
             }
             else if (Set.memberOf(Engine.Key.R, jp))
                 SceneBrowser.reload(state)
@@ -117,17 +118,69 @@ mod ViewerApp {
                     handleTabClick(mouseX, afterDebug)
                 }
             } else afterDebug;
+        // アニメーションを進める
+        let dt = Engine.Game.getDeltaTime();
+        let afterAnim = {loadedScene = SceneTree.stepAnimations(dt, afterClick#loadedScene) | afterClick};
         // 入力状態を更新
-        {prevKeys = currKeys, prevMousePressed = mousePressed | afterClick}
+        {prevKeys = currKeys, prevMousePressed = mousePressed | afterAnim}
+
+    /// テキストの文字数からタブ幅を推定する（fontSize 18 で 1文字あたり約 10px + 左右パディング）
+    def tabWidth(fileName: String): Float32 =
+        let charWidth = 10.0f32;
+        let padding = 20.0f32;
+        Int32.toFloat32(String.length(fileName)) * charWidth + padding
+
+    /// ファイル名リストからタブの累積X座標を計算する（各要素は対応するタブの左端）
+    def tabOffsets(fileNames: List[String]): List[Float32] =
+        let gap = 2.0f32;
+        fileNames
+            |> List.foldLeft((acc, name) -> {
+                let offset = match List.last(acc) {
+                    case Some((prevOffset, prevName)) => prevOffset + tabWidth(prevName) + gap
+                    case None => 0.0f32
+                };
+                List.append(acc, (offset, name) :: Nil)
+            }, Nil)
+            |> List.map(match (offset, _) -> offset)
+
+    /// アクティブタブが表示領域に収まるようスクロールオフセットを調整する
+    def ensureTabVisible(state: ViewerState.State): ViewerState.State =
+        let fileNames = state#sceneFiles |> List.map(extractFileName);
+        let offsets = tabOffsets(fileNames);
+        let activeOffset = offsets |> List.nth(state#currentFileIndex) |> Option.getWithDefault(0.0f32);
+        let activeName = fileNames |> List.nth(state#currentFileIndex) |> Option.getWithDefault("");
+        let activeWidth = tabWidth(activeName);
+        let visibleWidth = Int32.toFloat32(ViewerConfig.screenWidth()) - ViewerConfig.treePanelWidth();
+        let scrollX = state#tabScrollX;
+        // タブの右端が表示領域の右端より右にはみ出ている場合
+        let scrollX1 =
+            if (activeOffset + activeWidth + scrollX > visibleWidth)
+                visibleWidth - activeOffset - activeWidth
+            else scrollX;
+        // タブの左端が表示領域の左端より左にはみ出ている場合
+        let scrollX2 =
+            if (activeOffset + scrollX1 < 0.0f32)
+                0.0f32 - activeOffset
+            else scrollX1;
+        // スクロールは0以下（左方向のみ）
+        let finalScrollX = Float32.min(0.0f32, scrollX2);
+        {tabScrollX = finalScrollX | state}
 
     /// タブバーのクリックでファイルを切り替える
     def handleTabClick(mouseX: Float32, state: ViewerState.State): ViewerState.State \ Fs.FileRead =
-        let tabWidth = 200.0f32;
-        let clickedIndex = Vec2D.floatToInt32(mouseX / tabWidth);
-        let fileCount = List.length(state#sceneFiles);
-        if (clickedIndex >= 0 and clickedIndex < fileCount and clickedIndex != state#currentFileIndex)
-            SceneBrowser.reload({currentFileIndex = clickedIndex | state})
-        else state
+        let relX = mouseX - ViewerConfig.treePanelWidth() - state#tabScrollX;
+        let fileNames = state#sceneFiles |> List.map(extractFileName);
+        let offsets = tabOffsets(fileNames);
+        let clickedIndex = List.zip(fileNames, offsets)
+            |> List.mapWithIndex((index, nameAndOffset) -> (index, nameAndOffset))
+            |> List.findMap(match (index, (name, offset)) ->
+                if (relX >= offset and relX < offset + tabWidth(name)) Some(index) else None);
+        match clickedIndex {
+            case Some(index) if index != state#currentFileIndex =>
+                SceneBrowser.reload({currentFileIndex = index | state})
+                    |> ensureTabVisible
+            case _ => state
+        }
 
     // ========================================================================
     // シーン構築
@@ -162,16 +215,19 @@ mod ViewerApp {
                                            y = ViewerConfig.tabBarHeight()},
                                    texture = "white"})
                         |> Sprite2D.color({r = 0.1f32, g = 0.1f32, b = 0.13f32});
-        let tabs = state#sceneFiles
-            |> List.mapWithIndex((index, filePath) -> {
-                let fileName = extractFileName(filePath);
+        let fileNames = state#sceneFiles |> List.map(extractFileName);
+        let offsets = tabOffsets(fileNames);
+        let tabs = List.zip(fileNames, offsets)
+            |> List.mapWithIndex((index, nameAndOffset) -> {
+                let (fileName, offset) = nameAndOffset;
                 let isActive = index == state#currentFileIndex;
-                let tabX = Int32.toFloat32(index) * 200.0f32;
+                let tabX = ViewerConfig.treePanelWidth() + offset + state#tabScrollX;
+                let tw = tabWidth(fileName);
                 let bgColor = if (isActive) {r = 0.25f32, g = 0.28f32, b = 0.35f32}
                               else {r = 0.1f32, g = 0.1f32, b = 0.13f32};
                 let tabBgSprite = Sprite2D.init({name = "tab_bg_${index}",
                                                  pos = {x = tabX, y = 0.0f32},
-                                                 size = {x = 198.0f32, y = ViewerConfig.tabBarHeight()},
+                                                 size = {x = tw, y = ViewerConfig.tabBarHeight()},
                                                  texture = "white"})
                                      |> Sprite2D.color(bgColor);
                 let textColor = if (isActive) {r = 1.0f32, g = 1.0f32, b = 1.0f32}
@@ -207,10 +263,11 @@ mod ViewerApp {
                        |> Label2D.color({r = 0.6f32, g = 0.6f32, b = 0.65f32});
         SceneTree.node2D("HelpBar", Vec2D.zero(), bg :: label :: Nil)
 
-    /// ファイルパスからファイル名だけを抽出する
+    /// ファイルパスから表示用の短いファイル名を抽出する（.scene.json を除去）
     def extractFileName(path: String): String =
         path
             |> String.split({regex = "/"})
             |> List.last
             |> Option.getWithDefault(path)
+            |> String.replace({src = ".scene.json"}, {dst = ""})
 }

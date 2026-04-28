@@ -2,14 +2,26 @@
 
 mod Vehicle {
 
-    pub def size(): Vec2D.Vec2 = {x = 64.0f32, y = 48.0f32}
+    /// 車両テンプレートから抽出する構造情報（size: Sprite の size から取得）
+    pub type alias Config = {
+        size = Vec2D.Vec2
+    }
 
-    def spriteName(): String = "Sprite"
+    /// JSONテンプレートを読み込み、SceneTree.Node として返す
+    pub def loadTemplate(): SceneTree.Node \ Fs.FileRead =
+        SceneLoader.loadScene("src/scenes/Vehicle.scene.json")
 
-    /// 車両ノードを構築（Area2D + Sprite + CollisionShape）
-    pub def build(name: String, pos: Vec2D.Vec2, texture: String): SceneTree.Node =
-        let sprite = Sprite2D.init({name = spriteName(), pos = Vec2D.zero(),
-                                    size = size(), texture = texture});
-        let shape = RectShape2D.init({name = "Shape", size = size()});
+    /// テンプレートの Sprite ノードからサイズを抽出する（純粋）
+    pub def loadConfig(template: SceneTree.Node): Config =
+        match SceneTree.findSpriteData("Sprite", template) {
+            case Some(sd) => {size = sd#size}
+            case None     => bug!("Vehicle template: Sprite node not found")
+        }
+
+    /// Config のサイズを使って車両ノードを構築する（純粋）
+    pub def build(config: Config, name: String, pos: Vec2D.Vec2, texture: String): SceneTree.Node =
+        let sprite = Sprite2D.init({name = "Sprite", pos = Vec2D.zero(),
+                                    size = config#size, texture = texture});
+        let shape = RectShape2D.init({name = "Shape", size = config#size});
         Area2D.init({name = name, pos = pos, children = sprite :: shape :: Nil})
 }

@@ -1,0 +1,9 @@
+{
+  "type": "Area2D",
+  "name": "Vehicle",
+  "pos": [0, 0],
+  "children": [
+    { "type": "Sprite2D", "name": "Sprite", "pos": [0, 0], "size": [64, 48], "texture": "Car1" },
+    { "type": "RectShape2D", "name": "Shape", "size": [64, 48] }
+  ]
+}
