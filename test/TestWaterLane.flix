@@ -311,7 +311,7 @@ def testLogMovesLeftward(): Unit \ Assert =
 @Test
 def testShouldNotDrownAtStart(): Unit \ {Assert, Fs.FileRead} =
     // スタート地点(y=832)は水域外なので溺死しない
-    Assert.assertFalse(WaterLane.shouldDrown(FroggerScene.buildInitialScene()))
+    Assert.assertFalse(WaterLane.shouldDrown(true, FroggerScene.buildInitialScene()))
 
 @Test
 def testShouldDrownInWaterWithoutLog(): Unit \ {Assert, Fs.FileRead} =
@@ -321,28 +321,28 @@ def testShouldDrownInWaterWithoutLog(): Unit \ {Assert, Fs.FileRead} =
     //   └────────────────────┘
     let scene = FroggerScene.buildInitialScene()
         |> SceneTree.setNodePosition(FroggerPlayer.playerName(), {x = 50.0f32, y = 100.0f32});
-    Assert.assertTrue(WaterLane.shouldDrown(scene))
+    Assert.assertTrue(WaterLane.shouldDrown(true, scene))
 
 @Test
 def testShouldNotDrownOnMedian(): Unit \ {Assert, Fs.FileRead} =
     // 中間歩道(y=448)は水域外なので溺死しない
     let scene = FroggerScene.buildInitialScene()
         |> SceneTree.setNodePosition(FroggerPlayer.playerName(), {x = 384.0f32, y = 448.0f32});
-    Assert.assertFalse(WaterLane.shouldDrown(scene))
+    Assert.assertFalse(WaterLane.shouldDrown(true, scene))
 
 @Test
 def testShouldDrownOffScreenLeft(): Unit \ {Assert, Fs.FileRead} =
     // 画面外（左端を超過）→ 溺死する
     let scene = FroggerScene.buildInitialScene()
         |> SceneTree.setNodePosition(FroggerPlayer.playerName(), {x = -50.0f32, y = 100.0f32});
-    Assert.assertTrue(WaterLane.shouldDrown(scene))
+    Assert.assertTrue(WaterLane.shouldDrown(true, scene))
 
 @Test
 def testShouldDrownOffScreenRight(): Unit \ {Assert, Fs.FileRead} =
     // 画面外（右端を超過）→ 溺死する
     let scene = FroggerScene.buildInitialScene()
         |> SceneTree.setNodePosition(FroggerPlayer.playerName(), {x = 850.0f32, y = 100.0f32});
-    Assert.assertTrue(WaterLane.shouldDrown(scene))
+    Assert.assertTrue(WaterLane.shouldDrown(true, scene))
 
 // ========================================================================
 // Scene integration tests

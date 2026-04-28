@@ -117,4 +117,14 @@ mod HomeSlot {
             |> SceneTree.updateSprite(emptySpriteName(slotIdx), sd -> {visible = false | sd})
             |> SceneTree.updateSprite(filledSpriteName(slotIdx), sd -> {visible = true | sd})
 
+    /// プレイヤーがホームゾーンのスロットに到達したか判定し、
+    /// スロットを埋めてシーンを返す。スロット外なら None（死亡扱い）。
+    pub def tryFillSlot(playerPos: Vec2D.Vec2,
+                        scene: SceneTree.Node): Option[SceneTree.Node] =
+        if (not isInHomeZone(playerPos#y)) None
+        else match findSlotAtPosition(scene, playerPos#x) {
+            case Some(slotIdx) => Some(fillSlot(slotIdx, scene))
+            case None          => None
+        }
+
 }

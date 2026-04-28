@@ -42,6 +42,9 @@ mod VehicleLane {
     pub def vehicleName(laneIdx: Int32, vehicleIdx: Int32): String =
         "V${laneIdx}_${vehicleIdx}"
 
+    pub def isVehicle(name: String): Bool =
+        String.startsWith({prefix = "V"}, name)
+
     // ========================================================================
     // Wrap boundaries — one car width buffer beyond each screen edge
     // ========================================================================

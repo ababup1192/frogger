@@ -170,14 +170,11 @@ mod FroggerScene {
             case None => state
             case Some(pos) =>
                 if (not atTarget or not HomeSlot.isInHomeZone(pos#y)) state
-                else match HomeSlot.findSlotAtPosition(state#scene, pos#x) {
-                    case Some(slotIdx) =>
-                        let filledScene = state#scene |> HomeSlot.fillSlot(slotIdx);
-                        let respawnedScene = FroggerPlayer.respawn(filledScene);
-                        {scene = respawnedScene,
+                else match HomeSlot.tryFillSlot(pos, state#scene) {
+                    case Some(filledScene) =>
+                        {scene = FroggerPlayer.respawn(filledScene),
                          timeRemaining = Game.initialTimeRemaining() | state}
                     case None =>
-                        // Home zone but no valid slot — death (hit wall between slots)
                         triggerDeath(state)
                 }
         }
@@ -226,7 +223,7 @@ mod FroggerScene {
                 def areaEntered(name, _pos, body, k) =
                     let st = k(());
                     if (name == hitboxName and not isPlayerDead(st#scene) and
-                        String.startsWith({prefix = "V"}, body#name))
+                        VehicleLane.isVehicle(body#name))
                         triggerDeath(st)
                     else st
             };
@@ -234,14 +231,9 @@ mod FroggerScene {
             let ridingScene = collisionState#scene
                 |> WaterLane.applyPlatformRiding(dt)
                 |> TurtleLane.applyPlatformRiding(dt);
-            let onLog = not Option.isEmpty(WaterLane.findOverlappingLogVelocity(ridingScene));
-            let onTurtle = not Option.isEmpty(TurtleLane.findOverlappingTurtleVelocity(ridingScene));
-            let playerPos = SceneTree.globalPosition(FroggerPlayer.playerName(), ridingScene);
-            let inWater = playerPos
-                |> Option.map(pos -> WaterLane.isInWaterZone(pos#y))
-                |> Option.getWithDefault(false);
             let atTarget = FroggerPlayer.isAtTarget(ridingScene);
-            let drown = (atTarget and inWater and not onLog and not onTurtle) or WaterLane.isPlayerOffScreen(ridingScene);
+            let drown = WaterLane.shouldDrown(atTarget, ridingScene);
+            let playerPos = SceneTree.globalPosition(FroggerPlayer.playerName(), ridingScene);
             if (drown and not isPlayerDead(ridingScene))
                 triggerDeath({scene = ridingScene | collisionState})
             else
