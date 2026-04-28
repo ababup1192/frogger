@@ -11,7 +11,7 @@ mod ViewerConfig {
     pub def treePanelWidth(): Float32 = 350.0f32
 
     /// ファイルタブの高さ（ピクセル）
-    pub def tabBarHeight(): Float32 = 32.0f32
+    pub def tabBarHeight(): Float32 = 40.0f32
 
     /// デフォルトのフォントパス
     pub def defaultFont(): String = "textures/UDEVGothic-Regular.ttf"

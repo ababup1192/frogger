@@ -27,7 +27,7 @@ mod ViewerApp {
     def collectPressedKeys(): Set[Engine.Key] \ Engine.Game =
         let keys = Engine.Key.Tab :: Engine.Key.R :: Engine.Key.Home ::
                    Engine.Key.Up :: Engine.Key.Down :: Engine.Key.Left :: Engine.Key.Right ::
-                   Engine.Key.Equal :: Engine.Key.Minus ::
+                   Engine.Key.PageUp :: Engine.Key.PageDown ::
                    Engine.Key.LeftShift :: Engine.Key.RightShift :: Nil;
         List.foldLeft((acc, key) ->
             if (Engine.Game.isKeyPressed(key)) Set.insert(key, acc) else acc,
@@ -77,10 +77,10 @@ mod ViewerApp {
         };
         // ズーム操作（= / -）
         let afterZoom =
-            if (Set.memberOf(Engine.Key.Equal, jp)) {
+            if (Set.memberOf(Engine.Key.PageUp, jp)) {
                 let newZoom = Float32.min(4.0f32, afterPan#canvasState#zoom + 0.25f32);
                 {canvasState = {zoom = newZoom | afterPan#canvasState} | afterPan}
-            } else if (Set.memberOf(Engine.Key.Minus, jp)) {
+            } else if (Set.memberOf(Engine.Key.PageDown, jp)) {
                 let newZoom = Float32.max(0.25f32, afterPan#canvasState#zoom - 0.25f32);
                 {canvasState = {zoom = newZoom | afterPan#canvasState} | afterPan}
             } else if (Set.memberOf(Engine.Key.Home, jp)) {
@@ -163,7 +163,7 @@ mod ViewerApp {
                                 else {r = 0.6f32, g = 0.6f32, b = 0.6f32};
                 let tabLabel = Label2D.init({name = "tab_lbl_${index}",
                                             pos = {x = tabX + 8.0f32, y = 8.0f32},
-                                            text = fileName, fontSize = 13.0f32,
+                                            text = fileName, fontSize = 18.0f32,
                                             font = ViewerConfig.defaultFont()})
                                    |> Label2D.color(textColor);
                 SceneTree.node2D("tab_${index}", Vec2D.zero(), tabBgSprite :: tabLabel :: Nil)
@@ -172,9 +172,8 @@ mod ViewerApp {
 
     /// ファイルパスからファイル名だけを抽出する
     def extractFileName(path: String): String =
-        match String.lastIndexOf({substr = "/"}, path) {
-            case None => path
-            case Some(idx) =>
-                String.sliceRight({start = idx + 1}, path)
-        }
+        path
+            |> String.split({regex = "/"})
+            |> List.last
+            |> Option.getWithDefault(path)
 }

@@ -49,7 +49,7 @@ mod CanvasPanel {
         // ノード名ラベル
         let label = Label2D.init({name = "cv_lbl_${name}",
                                   pos = {x = globalX, y = globalY - 14.0f32},
-                                  text = name, fontSize = 11.0f32,
+                                  text = name, fontSize = 16.0f32,
                                   font = ViewerConfig.defaultFont()})
                         |> Label2D.color({r = 0.9f32, g = 0.9f32, b = 0.9f32});
         // 子ノードを再帰的に処理

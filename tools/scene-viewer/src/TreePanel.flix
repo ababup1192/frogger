@@ -2,7 +2,7 @@
 
 mod TreePanel {
     /// 1行の高さ（ピクセル）
-    def rowHeight(): Float32 = 20.0f32
+    def rowHeight(): Float32 = 28.0f32
 
     /// インデントの幅（ピクセル／深さ1あたり）
     def indentWidth(): Float32 = 16.0f32
@@ -62,7 +62,7 @@ mod TreePanel {
         // テキストラベル
         let label = Label2D.init({name = "tree_${name}",
                                   pos = {x = xPos, y = yPos},
-                                  text = displayText, fontSize = 13.0f32,
+                                  text = displayText, fontSize = 18.0f32,
                                   font = ViewerConfig.defaultFont()})
                         |> Label2D.color({r = 0.85f32, g = 0.85f32, b = 0.85f32});
         // この行を追加
@@ -117,10 +117,10 @@ mod TreePanel {
                     let SceneTree.Node.MkNode(rowNodeName, _, _, _) = row#node;
                     // treeRow_ プレフィクスの場合は内部の label 名を使う
                     if (String.startsWith({prefix = "treeRow_"}, rowNodeName))
-                        Some(String.stripPrefix({prefix = "treeRow_"}, rowNodeName)
+                        Some(String.stripPrefix({substr = "treeRow_"}, rowNodeName)
                              |> Option.getWithDefault(rowNodeName))
                     else
-                        Some(String.stripPrefix({prefix = "tree_"}, rowNodeName)
+                        Some(String.stripPrefix({substr = "tree_"}, rowNodeName)
                              |> Option.getWithDefault(rowNodeName))
                 }
                 else findRowNode(rest, targetRow)
