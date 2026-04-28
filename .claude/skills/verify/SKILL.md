@@ -1,8 +1,9 @@
 ---
 name: verify
-description: "コード変更後の検証 - テスト実行と動作確認を順番に行う"
+description: "コード変更後にflix testとflix runの2段階検証を順番に行う"
 disable-model-invocation: true
-allowed-tools: Bash
+allowed-tools:
+  - "Bash(devbox run -- java -jar bin/flix.jar *)"
 ---
 
 # 変更後の検証実行

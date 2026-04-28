@@ -2,7 +2,12 @@
 name: dev-log
 description: "開発セッションの所感（指摘・良パターン・ハマりポイント）をMEMORY.mdに記録する"
 disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Bash
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - "Bash(git log *)"
+  - "Bash(git diff *)"
 ---
 
 # 開発ログの記録
