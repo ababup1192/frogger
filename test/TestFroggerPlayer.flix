@@ -1,78 +1,41 @@
 // Tests for FroggerPlayer — sprite, movement, and input
 
 // ========================================================================
-// Sprite Tests
+// Scene Loading — scene.jsonの全パラメータが正しくNodeに変換されるか一括検証
 // ========================================================================
 
 @Test
-def testPlayerIsCharacterBody(): Unit \ {Assert, Fs.FileRead} =
-    let player = FroggerPlayer.buildPlayer();
-    match SceneTree.nodeKind(player) {
-        case SceneTree.NodeKind.Character(_) => Assert.assertTrue(true)
-        case _ => Assert.assertTrue(false)
-    }
-
-@Test
-def testPlayerName(): Unit \ {Assert, Fs.FileRead} =
-    let player = FroggerPlayer.buildPlayer();
-    Assert.assertEq(expected = "Player", SceneTree.nodeName(player))
-
-@Test
-def testPlayerPosition(): Unit \ {Assert, Fs.FileRead} =
+def testBuildPlayerMatchesJson(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     let pos = SceneTree.nodePosition(player);
-    Assert.assertEq(expected = 384.0f32, pos#x);
-    Assert.assertEq(expected = 832.0f32, pos#y)
-
-@Test
-def testPlayerMoveSpeed(): Unit \ {Assert, Fs.FileRead} =
-    let player = FroggerPlayer.buildPlayer();
-    match SceneTree.characterBodyData(player) {
-        case Some(cbd) => Assert.assertEq(expected = 512.0f32, cbd#moveSpeed)
-        case None => Assert.assertTrue(false)
-    }
-
-@Test
-def testPlayerInitialTargetPos(): Unit \ {Assert, Fs.FileRead} =
-    let player = FroggerPlayer.buildPlayer();
-    match SceneTree.characterBodyData(player) {
-        case Some(cbd) =>
-            Assert.assertEq(expected = 384.0f32, cbd#targetPos#x);
-            Assert.assertEq(expected = 832.0f32, cbd#targetPos#y)
-        case None => Assert.assertTrue(false)
-    }
-
-@Test
-def testPlayerSpriteChildName(): Unit \ {Assert, Fs.FileRead} =
-    let player = FroggerPlayer.buildPlayer();
-    match SceneTree.findNode("Sprite", player) {
-        case Some(sprite) => Assert.assertEq(expected = "Sprite", SceneTree.nodeName(sprite))
-        case None         => Assert.assertTrue(false)
-    }
-
-@Test
-def testPlayerSpriteAnimation(): Unit \ {Assert, Fs.FileRead} =
-    // プレイヤーのスプライトは AnimatedSprite で、初期アニメーションが "idle"
-    let player = FroggerPlayer.buildPlayer();
-    match SceneTree.findNode("Sprite", player) {
-        case Some(sprite) => match SceneTree.nodeKind(sprite) {
-            case SceneTree.NodeKind.AnimatedSprite(asd) =>
-                Assert.assertEq(expected = "idle", asd#currentAnimation)
-            case _ => bug!("Player/Sprite is not an AnimatedSprite node")
-        }
-        case None => bug!("Player/Sprite not found")
-    }
-
-@Test
-def testPlayerSpriteSize(): Unit \ {Assert, Fs.FileRead} =
-    let player = FroggerPlayer.buildPlayer();
-    match SceneTree.findNode("Sprite", player) {
-        case Some(sprite) => match SceneTree.nodeKind(sprite) {
-            case SceneTree.NodeKind.AnimatedSprite(asd) =>
-                Assert.assertEq(expected = (64.0f32, 64.0f32), (asd#size#x, asd#size#y))
-            case _ => bug!("Player/Sprite is not an AnimatedSprite node")
-        }
-        case None => bug!("Player/Sprite not found")
+    let result = forM (
+        cbd    <- SceneTree.characterBodyData(player);
+        asd    <- SceneTree.findAnimatedSpriteData(SceneTree.childName(FroggerPlayer.Child.Sprite), player);
+        hitbox <- SceneTree.findNode(SceneTree.childName(FroggerPlayer.Child.Hitbox), player);
+        shape  <- SceneTree.findRectShape(SceneTree.nodeChildren(hitbox))
+    ) yield {
+        // Root: CharacterBody2D "Player" at startPos, moveSpeed=512
+        Assert.assertEq(expected = "Player", SceneTree.nodeName(player));
+        Assert.assertEq(expected = FroggerPlayer.startPos()#x, pos#x);
+        Assert.assertEq(expected = FroggerPlayer.startPos()#y, pos#y);
+        Assert.assertEq(expected = 512.0f32, cbd#moveSpeed);
+        Assert.assertEq(expected = pos#x, cbd#targetPos#x);
+        Assert.assertEq(expected = pos#y, cbd#targetPos#y);
+        // Sprite: size=(64,64), initialAnimation="idle", fps=4
+        Assert.assertEq(expected = 64.0f32, asd#size#x);
+        Assert.assertEq(expected = 64.0f32, asd#size#y);
+        Assert.assertEq(expected = "idle", asd#currentAnimation);
+        Assert.assertEq(expected = 4.0f32, asd#fps);
+        // Hitbox: pos=(16,20), Shape: size=(32,24)
+        let hpos = SceneTree.nodePosition(hitbox);
+        Assert.assertEq(expected = 16.0f32, hpos#x);
+        Assert.assertEq(expected = 20.0f32, hpos#y);
+        Assert.assertEq(expected = 32.0f32, shape#x);
+        Assert.assertEq(expected = 24.0f32, shape#y)
+    };
+    match result {
+        case Some(_) => ()
+        case None    => bug!("Player node structure does not match expected JSON layout")
     }
 
 // ========================================================================

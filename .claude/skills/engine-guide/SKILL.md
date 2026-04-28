@@ -1,19 +1,20 @@
 ---
 name: engine-guide
-description: "ゲームエンジン（Scene, Game, Node）のコードを書く前に参照するお作法ガイド。責務分担、Nodeの使い分け、イベント検知の活用を含む"
-when_to_use: "Scene、Game、Nodeに関するコードを書くとき、ゲームエンジンを拡張するとき"
+description: "ゲームエンジン（Scene, Game, Node）のコードを書く前に参照するお作法ガイド。責務分担、Nodeの使い分け、イベント検知の活用を含む - Scene、Game、Nodeに関するコードを書くとき、ゲームエンジンを拡張するとき"
 user-invocable: false
-paths:
-  - "src/scene/**/*.flix"
-  - "src/Game.flix"
-  - "src/SceneTree.flix"
-  - "src/NodeBuilders.flix"
-  - "src/Engine.flix"
 ---
 
 # ゲームエンジン開発のお作法
 
 ゲームエンジン関連のコード（Scene, Game, Node）を書く・修正する前に参照してください。
+
+## 対象ファイル
+
+- `src/scene/**/*.flix`
+- `src/Game.flix`
+- `src/SceneTree.flix`
+- `src/NodeBuilders.flix`
+- `src/Engine.flix`
 
 ## コーディングスタイル
 
