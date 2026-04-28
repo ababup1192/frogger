@@ -375,9 +375,31 @@ mod LwjglLayer {
     // Rendering (SceneTree-based, generic — no changes needed for new entities)
     // ============================================================================
 
+    /// デバッグ矩形を枠線（2px幅の4辺）として描画する
+    def renderDebugRects(rects: List[Engine.DebugRect], shader: Int32, vao: Int32, whiteTexId: Int32): Unit \ IO =
+        let border = 2.0f32;
+        let uvOff = Vec2D.zero();
+        let uvSc = Vec2D.one();
+        List.forEach(rect -> {
+            let px = rect#pos#x;
+            let py = rect#pos#y;
+            let sw = rect#size#x;
+            let sh = rect#size#y;
+            let c = rect#color;
+            // 上辺
+            drawSprite(shader, whiteTexId, vao, {x = px, y = py}, {x = sw, y = border}, c, uvOff, uvSc, 0.0f32);
+            // 下辺
+            drawSprite(shader, whiteTexId, vao, {x = px, y = py + sh - border}, {x = sw, y = border}, c, uvOff, uvSc, 0.0f32);
+            // 左辺
+            drawSprite(shader, whiteTexId, vao, {x = px, y = py}, {x = border, y = sh}, c, uvOff, uvSc, 0.0f32);
+            // 右辺
+            drawSprite(shader, whiteTexId, vao, {x = px + sw - border, y = py}, {x = border, y = sh}, c, uvOff, uvSc, 0.0f32)
+        }, rects)
+
     def renderScene(scene: SceneTree.Node, registry: Engine.TextureRegistry, shader: Int32, vao: Int32,
                     screenW: Float32, screenH: Float32, clearColor: Engine.Color,
-                    renderText: SceneTree.Node -> Unit \ IO): Unit \ IO =
+                    renderText: (SceneTree.Node, List[SceneTree.TextDrawable]) -> Unit \ IO,
+                    debugOverlay: Option[Engine.DebugOverlay]): Unit \ IO =
         GL11.glClearColor(clearColor#r, clearColor#g, clearColor#b, 1.0f32);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
 
@@ -397,7 +419,21 @@ mod LwjglLayer {
             }
         }, drawables);
 
-        renderText(scene)
+        // デバッグ矩形の枠線描画
+        match debugOverlay {
+            case Some(overlay) =>
+                match Map.get("white", registry) {
+                    case Some(whiteTexId) => renderDebugRects(overlay#rects, shader, vao, whiteTexId)
+                    case None => ()
+                }
+            case None => ()
+        };
+
+        let debugLabels = match debugOverlay {
+            case Some(overlay) => overlay#labels
+            case None => Nil
+        };
+        renderText(scene, debugLabels)
 
     // ============================================================================
     // Audio Loading
@@ -634,11 +670,12 @@ mod LwjglLayer {
         println("  Audio ready");
 
         // Text drawing closure — batched rendering with dynamic glyph atlas
+        // extraLabels: デバッグオーバーレイ等の追加テキスト
         let maxTextChars = 16384;
         let textVertBuf = MemoryUtil.memAllocFloat(maxTextChars * 42);
-        let drawTextOnScreen = (scene: SceneTree.Node) -> {
+        let drawTextOnScreen = (scene: SceneTree.Node, extraLabels: List[SceneTree.TextDrawable]) -> {
             setProjectionMatrix(textBatchShader, screenW, screenH);
-            let textDrawables = SceneTree.collectTextDrawables(scene, Vec2D.zero());
+            let textDrawables = List.append(SceneTree.collectTextDrawables(scene, Vec2D.zero()), extraLabels);
             // Bind atlas texture (needed for both caching new glyphs and drawing)
             GL13.glActiveTexture(GL13.GL_TEXTURE0);
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, fontTexId);
@@ -736,8 +773,8 @@ mod LwjglLayer {
                 k(())
             }
         } with handler Engine.Game {
-            def render(scene, k) = {
-                renderScene(scene, registry, shader, vao, screenW, screenH, config#clearColor, drawTextOnScreen);
+            def render(scene, debugOverlay, k) = {
+                renderScene(scene, registry, shader, vao, screenW, screenH, config#clearColor, drawTextOnScreen, debugOverlay);
                 GLFW.glfwSwapBuffers(window);
                 k(())
             }

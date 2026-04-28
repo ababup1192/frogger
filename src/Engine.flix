@@ -114,8 +114,17 @@ mod Engine {
         case PageDown
     }
 
+    /// デバッグオーバーレイの矩形情報
+    pub type alias DebugRect = { pos = Vec2D.Vec2, size = Vec2D.Vec2, color = Color }
+
+    /// デバッグオーバーレイ（矩形枠 + テキストラベル）
+    pub type alias DebugOverlay = {
+        rects  = List[DebugRect],
+        labels = List[SceneTree.TextDrawable]
+    }
+
     pub eff Game {
-        def render(scene: SceneTree.Node): Unit
+        def render(scene: SceneTree.Node, debugOverlay: Option[DebugOverlay]): Unit
         def shouldClose(): Bool
         def getDeltaTime(): Float32
         def isKeyPressed(key: Key): Bool
