@@ -1,0 +1,47 @@
+{
+  "type": "Node2D",
+  "name": "VehicleLanes",
+  "pos": [0, 0],
+  "children": [
+    {
+      "type": "Node2D", "name": "VehicleLane0", "pos": [0, 512],
+      "children": [
+        { "type": "$Vehicle", "name": "V0_0", "pos": [784, 0], "velocity": [-200, 0], "texture": "Car1" },
+        { "type": "$Vehicle", "name": "V0_1", "pos": [684, 0], "velocity": [-200, 0], "texture": "Car1" },
+        { "type": "$Vehicle", "name": "V0_2", "pos": [584, 0], "velocity": [-200, 0], "texture": "Car1" }
+      ]
+    },
+    {
+      "type": "Node2D", "name": "VehicleLane1", "pos": [0, 576],
+      "children": [
+        { "type": "$Vehicle", "name": "V1_0", "pos": [0, 0], "velocity": [250, 0], "texture": "Car2" },
+        { "type": "$Vehicle", "name": "V1_1", "pos": [150, 0], "velocity": [250, 0], "texture": "Car2" },
+        { "type": "$Vehicle", "name": "V1_2", "pos": [300, 0], "velocity": [250, 0], "texture": "Car2" },
+        { "type": "$Vehicle", "name": "V1_3", "pos": [450, 0], "velocity": [250, 0], "texture": "Car2" }
+      ]
+    },
+    {
+      "type": "Node2D", "name": "VehicleLane2", "pos": [0, 640],
+      "children": [
+        { "type": "$Vehicle", "name": "V2_0", "pos": [784, 0], "velocity": [-200, 0], "texture": "Car3" },
+        { "type": "$Vehicle", "name": "V2_1", "pos": [484, 0], "velocity": [-200, 0], "texture": "Car3" }
+      ]
+    },
+    {
+      "type": "Node2D", "name": "VehicleLane3", "pos": [0, 704],
+      "children": [
+        { "type": "$Vehicle", "name": "V3_0", "pos": [0, 0], "velocity": [200, 0], "texture": "Car4" },
+        { "type": "$Vehicle", "name": "V3_1", "pos": [300, 0], "velocity": [200, 0], "texture": "Car4" },
+        { "type": "$Vehicle", "name": "V3_2", "pos": [600, 0], "velocity": [200, 0], "texture": "Car4" },
+        { "type": "$Vehicle", "name": "V3_3", "pos": [900, 0], "velocity": [200, 0], "texture": "Car4" }
+      ]
+    },
+    {
+      "type": "Node2D", "name": "VehicleLane4", "pos": [0, 768],
+      "children": [
+        { "type": "$Vehicle", "name": "V4_0", "pos": [784, 0], "velocity": [-160, 0], "texture": "Car5" },
+        { "type": "$Vehicle", "name": "V4_1", "pos": [554, 0], "velocity": [-160, 0], "texture": "Car5" }
+      ]
+    }
+  ]
+}

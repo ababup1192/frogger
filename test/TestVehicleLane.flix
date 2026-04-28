@@ -1,13 +1,31 @@
 // Tests for VehicleLane — lane construction, vehicle placement, wrapping, and movement
 
 // ========================================================================
-// Lane Config Tests — laneConfigs() は純粋関数
+// loadLaneConfigs Tests — シーンツリーからレーン設定を抽出
 // ========================================================================
 
 @Test
-def testLaneConfigCount(): Unit \ Assert =
-    // 5レーン分の設定が定義されている
-    Assert.assertEq(expected = 5, List.length(VehicleLane.laneConfigs()))
+def testLoadLaneConfigCount(): Unit \ {Assert, Fs.FileRead} =
+    // 5レーン分の設定がシーンツリーから抽出される
+    let scene = VehicleLane.buildVehicleLanes();
+    Assert.assertEq(expected = 5, List.length(VehicleLane.loadLaneConfigs(scene)))
+
+@Test
+def testLoadLaneConfigDirection(): Unit \ {Assert, Fs.FileRead} =
+    // レーン0は左方向（direction = -1）、レーン1は右方向（direction = 1）
+    let configs = VehicleLane.loadLaneConfigs(VehicleLane.buildVehicleLanes());
+    match (List.nth(0, configs), List.nth(1, configs)) {
+        case (Some(c0), Some(c1)) =>
+            Assert.assertEq(expected = (-1.0f32, 1.0f32), (c0#direction, c1#direction))
+        case _ => bug!("configs has fewer than 2 entries")
+    }
+
+@Test
+def testLoadLaneConfigVehicleCount(): Unit \ {Assert, Fs.FileRead} =
+    // 各レーンの車両数がJSONと一致する（3, 4, 2, 4, 2）
+    let configs = VehicleLane.loadLaneConfigs(VehicleLane.buildVehicleLanes());
+    let counts = List.map(c -> c#vehicleCount, configs);
+    Assert.assertEq(expected = 3 :: 4 :: 2 :: 4 :: 2 :: Nil, counts)
 
 // ========================================================================
 // laneY Tests — road zone starts at 512, each lane is 64px tall
@@ -24,33 +42,7 @@ def testLaneY4(): Unit \ Assert =
     Assert.assertEq(expected = 768.0f32, VehicleLane.laneY(4))
 
 // ========================================================================
-// initialX Tests — direction に応じた初期配置
-// ========================================================================
-
-@Test
-def testInitialXLeftMoving(): Unit \ Assert =
-    // 左方向レーン: screenW(784) から spacing 分ずつ左へ
-    let cfg = List.head(VehicleLane.laneConfigs());
-    match cfg {
-        case Some(c) =>
-            Assert.assertEq(expected = (784.0f32, 684.0f32),
-                (VehicleLane.initialX(c, 0), VehicleLane.initialX(c, 1)))
-        case None => bug!("laneConfigs is empty")
-    }
-
-@Test
-def testInitialXRightMoving(): Unit \ Assert =
-    // 右方向レーン: 0 から spacing 分ずつ右へ
-    let cfg = List.head(List.drop(1, VehicleLane.laneConfigs()));
-    match cfg {
-        case Some(c) =>
-            Assert.assertEq(expected = (0.0f32, 150.0f32),
-                (VehicleLane.initialX(c, 0), VehicleLane.initialX(c, 1)))
-        case None => bug!("laneConfigs has fewer than 2 entries")
-    }
-
-// ========================================================================
-// buildVehicleLanes structure tests — Vehicle テンプレート読込あり
+// buildVehicleLanes structure tests — JSON シーンファイルからロード
 // ========================================================================
 
 @Test

@@ -113,6 +113,9 @@ mod ViewerApp {
                         case None =>
                         {treeState = {selectedNode = None | afterDebug#treeState} | afterDebug}
                     }
+                } else if (mouseX >= ViewerConfig.propertyPanelX()) {
+                    // プロパティパネルのクリック — 選択を維持
+                    afterDebug
                 } else if (mouseY > ViewerConfig.tabBarHeight()) {
                     // キャンバスパネルのクリック — 選択解除
                     {treeState = {selectedNode = None | afterDebug#treeState} | afterDebug}
@@ -197,17 +200,25 @@ mod ViewerApp {
         let tabBar = buildTabBar(state);
         let treePanel = TreePanel.build(state#loadedScene, state#treeState, state#debugView);
         let canvasPanel = CanvasPanel.build(state#loadedScene, state#canvasState, state#treeState#selectedNode, state#debugView);
+        let propertyPanel = PropertyPanel.build(state#loadedScene, state#treeState#selectedNode);
         let helpBar = buildHelpBar(state);
-        // パネル境界線
-        let divider = Sprite2D.init({name = "divider",
+        let dividerH = Int32.toFloat32(ViewerConfig.screenHeight()) - ViewerConfig.tabBarHeight();
+        // ツリーパネル右側の境界線
+        let leftDivider = Sprite2D.init({name = "divider",
                                      pos = {x = ViewerConfig.treePanelWidth() - 1.0f32,
                                             y = ViewerConfig.tabBarHeight()},
-                                     size = {x = 2.0f32,
-                                             y = Int32.toFloat32(ViewerConfig.screenHeight()) - ViewerConfig.tabBarHeight()},
+                                     size = {x = 2.0f32, y = dividerH},
+                                     texture = "white"})
+                          |> Sprite2D.color({r = 0.3f32, g = 0.3f32, b = 0.35f32});
+        // プロパティパネル左側の境界線
+        let rightDivider = Sprite2D.init({name = "rightDivider",
+                                     pos = {x = ViewerConfig.propertyPanelX() - 1.0f32,
+                                            y = ViewerConfig.tabBarHeight()},
+                                     size = {x = 2.0f32, y = dividerH},
                                      texture = "white"})
                           |> Sprite2D.color({r = 0.3f32, g = 0.3f32, b = 0.35f32});
         SceneTree.node2D("ViewerRoot", Vec2D.zero(),
-            tabBar :: treePanel :: canvasPanel :: divider :: helpBar :: Nil)
+            tabBar :: treePanel :: canvasPanel :: leftDivider :: propertyPanel :: rightDivider :: helpBar :: Nil)
 
     /// ファイルタブバーを構築する
     def buildTabBar(state: ViewerState.State): SceneTree.Node =

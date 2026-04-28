@@ -2,7 +2,13 @@
 
 mod ViewerConfig {
     /// 画面幅（ピクセル）
-    pub def screenWidth(): Int32 = 1200
+    pub def screenWidth(): Int32 = 1500
+
+    /// プロパティパネルの幅（ピクセル）
+    pub def propertyPanelWidth(): Float32 = 300.0f32
+
+    /// プロパティパネルの X 開始位置
+    pub def propertyPanelX(): Float32 = Int32.toFloat32(screenWidth()) - propertyPanelWidth()
 
     /// 画面高さ（ピクセル）
     pub def screenHeight(): Int32 = 800

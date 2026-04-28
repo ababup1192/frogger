@@ -6,6 +6,7 @@ mod VehicleLane {
     // Lane Configuration
     // ========================================================================
 
+    /// ラップ処理に必要なレーン情報
     pub type alias LaneConfig = {
         laneIndex = Int32,
         speed = Float32,
@@ -15,13 +16,44 @@ mod VehicleLane {
         spacing = Float32
     }
 
-    pub def laneConfigs(): List[LaneConfig] =
-        {laneIndex = 0, speed = 200.0f32, direction = -1.0f32, texture = "Car1", vehicleCount = 3, spacing = 100.0f32} ::
-        {laneIndex = 1, speed = 250.0f32, direction =  1.0f32, texture = "Car2", vehicleCount = 4, spacing = 150.0f32} ::
-        {laneIndex = 2, speed = 200.0f32, direction = -1.0f32, texture = "Car3", vehicleCount = 2, spacing = 300.0f32} ::
-        {laneIndex = 3, speed = 200.0f32, direction =  1.0f32, texture = "Car4", vehicleCount = 4, spacing = 300.0f32} ::
-        {laneIndex = 4, speed = 160.0f32, direction = -1.0f32, texture = "Car5", vehicleCount = 2, spacing = 230.0f32} ::
-        Nil
+    /// シーンツリーから各レーンの設定を抽出する（ラップ処理用）
+    pub def loadLaneConfigs(scene: SceneTree.Node): List[LaneConfig] =
+        match SceneTree.findNode(containerName(), scene) {
+            case None => Nil
+            case Some(container) =>
+                extractLaneConfigs(SceneTree.nodeChildren(container), 0)
+        }
+
+    /// レーンノードのリストから LaneConfig を再帰的に構築する
+    def extractLaneConfigs(lanes: List[SceneTree.Node], idx: Int32): List[LaneConfig] =
+        match lanes {
+            case Nil => Nil
+            case lane :: rest =>
+                let children = SceneTree.nodeChildren(lane);
+                let vehicleCount = List.length(children);
+                let (speed, direction) = match List.head(children) {
+                    case Some(vehicle) => match SceneTree.nodeKind(vehicle) {
+                        case SceneTree.NodeKind.Area(ad) =>
+                            (Float32.abs(ad#velocity#x),
+                             if (ad#velocity#x < 0.0f32) -1.0f32 else 1.0f32)
+                        case _ => (0.0f32, 1.0f32)
+                    }
+                    case None => (0.0f32, 1.0f32)
+                };
+                let texture = match List.head(children) {
+                    case Some(vehicle) =>
+                        match SceneTree.findSpriteData("Sprite", vehicle) {
+                            case Some(sd) => sd#texture
+                            case None     => ""
+                        }
+                    case None => ""
+                };
+                let cfg: LaneConfig = {
+                    laneIndex = idx, speed = speed, direction = direction,
+                    texture = texture, vehicleCount = vehicleCount, spacing = 0.0f32
+                };
+                cfg :: extractLaneConfigs(rest, idx + 1)
+        }
 
     // ========================================================================
     // Lane Y positions (road zone starts at 512, each lane is 64px tall)
@@ -29,17 +61,6 @@ mod VehicleLane {
 
     pub def laneY(index: Int32): Float32 =
         512.0f32 + Int32.toFloat32(index) * 64.0f32
-
-    // ========================================================================
-    // Initial X placement — distribute vehicles from the entry edge
-    // ========================================================================
-
-    pub def initialX(cfg: LaneConfig, i: Int32): Float32 =
-        let fi = Int32.toFloat32(i);
-        if (cfg#direction < 0.0f32)
-            screenW() - cfg#spacing * fi
-        else
-            cfg#spacing * fi
 
     // ========================================================================
     // Naming Helpers
@@ -83,36 +104,12 @@ mod VehicleLane {
             x
 
     // ========================================================================
-    // Build a single vehicle — delegate to Vehicle.build + set velocity
+    // Build all vehicle lanes from JSON scene file
     // ========================================================================
 
-    def buildVehicle(vehicleConfig: Vehicle.Config, cfg: LaneConfig, i: Int32): SceneTree.Node =
-        Vehicle.build(vehicleConfig, vehicleName(cfg#laneIndex, i),
-                      {x = initialX(cfg, i), y = 0.0f32},
-                      cfg#texture)
-            |> Area2D.velocity({x = cfg#speed * cfg#direction, y = 0.0f32})
-
-    // ========================================================================
-    // Build a single lane with its vehicles
-    // ========================================================================
-
-    def buildLane(vehicleConfig: Vehicle.Config, cfg: LaneConfig): SceneTree.Node =
-        List.range(0, cfg#vehicleCount)
-            |> List.map(i -> buildVehicle(vehicleConfig, cfg, i))
-            |> SceneTree.node2D(laneName(cfg#laneIndex),
-                                {x = 0.0f32, y = laneY(cfg#laneIndex)})
-
-    // ========================================================================
-    // Build all vehicle lanes as a container Node2D
-    // ========================================================================
-
-    /// 全車両レーンを構築する（Vehicle テンプレートを1回読み込み、全レーンに適用）
+    /// 全車両レーンを JSON シーンファイルから構築する
     pub def buildVehicleLanes(): SceneTree.Node \ Fs.FileRead =
-        let template = Vehicle.loadTemplate();
-        let vehicleConfig = Vehicle.loadConfig(template);
-        laneConfigs()
-            |> List.map(cfg -> buildLane(vehicleConfig, cfg))
-            |> SceneTree.node2D(containerName(), Vec2D.zero())
+        SceneLoader.loadScene("src/scenes/VehicleLane.scene.json")
 
     // ========================================================================
     // Wrap vehicles — apply screen-edge wrapping (movement handled by engine)
@@ -126,6 +123,7 @@ mod VehicleLane {
         List.range(0, cfg#vehicleCount)
             |> List.foldLeft((sc, i) -> wrapVehicle(cfg, i, sc), scene)
 
-    pub def wrapVehicles(scene: SceneTree.Node): SceneTree.Node =
-        List.foldLeft((sc, cfg) -> wrapLane(cfg, sc), scene, laneConfigs())
+    /// 設定リストに基づいて全レーンの車両をラップする
+    pub def wrapVehicles(configs: List[LaneConfig], scene: SceneTree.Node): SceneTree.Node =
+        List.foldLeft((sc, cfg) -> wrapLane(cfg, sc), scene, configs)
 }

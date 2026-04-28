@@ -8,7 +8,7 @@ mod CanvasPanel {
     def panelY(): Float32 = ViewerConfig.tabBarHeight()
 
     /// キャンバスの幅
-    def panelWidth(): Float32 = Int32.toFloat32(ViewerConfig.screenWidth()) - panelX()
+    def panelWidth(): Float32 = ViewerConfig.propertyPanelX() - panelX()
 
     /// キャンバスの高さ
     def panelHeight(): Float32 = Int32.toFloat32(ViewerConfig.screenHeight()) - panelY()

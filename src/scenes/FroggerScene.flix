@@ -35,16 +35,20 @@ mod FroggerScene {
     // ========================================================================
 
     pub type alias SceneState = {
-        scene         = SceneTree.Node,
-        lives         = Int32,
-        timeRemaining = Float32
+        scene              = SceneTree.Node,
+        lives              = Int32,
+        timeRemaining      = Float32,
+        vehicleLaneConfigs = List[VehicleLane.LaneConfig]
     }
 
-    pub def initSceneState(): SceneState \ Fs.FileRead = {
-        scene = buildInitialScene(),
-        lives = 3,
-        timeRemaining = Game.initialTimeRemaining()
-    }
+    pub def initSceneState(): SceneState \ Fs.FileRead =
+        let scene = buildInitialScene();
+        {
+            scene = scene,
+            lives = 3,
+            timeRemaining = Game.initialTimeRemaining(),
+            vehicleLaneConfigs = VehicleLane.loadLaneConfigs(scene)
+        }
 
     // ========================================================================
     // ゲーム終了条件
@@ -157,9 +161,9 @@ mod FroggerScene {
     // 全レーン折り返し — 車両・丸太・亀を一括ラップ
     // ========================================================================
 
-    def wrapAllLanes(scene: SceneTree.Node): SceneTree.Node =
+    def wrapAllLanes(configs: List[VehicleLane.LaneConfig], scene: SceneTree.Node): SceneTree.Node =
         scene
-            |> VehicleLane.wrapVehicles
+            |> VehicleLane.wrapVehicles(configs)
             |> WaterLane.wrapLogs
             |> TurtleLane.wrapTurtles
 
@@ -209,7 +213,7 @@ mod FroggerScene {
             def areaEntered(_name, _pos, _body, k) = k(())
         };
         let wrappedScene = movedScene
-            |> wrapAllLanes
+            |> wrapAllLanes(state#vehicleLaneConfigs)
             |> SceneTree.stepAnimations(dt);
         run {
             let s = SceneTree.stepTimers(dt, wrappedScene);
@@ -235,7 +239,7 @@ mod FroggerScene {
         let playerScene = FroggerPlayer.stepFrame(dt, state#scene);
         let collisionState = run {
             let s = SceneTree.stepAndCollide(playerScene, dt, physicsConfig());
-            {scene = s |> wrapAllLanes |> SceneTree.stepAnimations(dt) | state}
+            {scene = s |> wrapAllLanes(state#vehicleLaneConfigs) |> SceneTree.stepAnimations(dt) | state}
         } with handler SceneTree.OnCollision {
             def bodyEntered(_name, _pos, _body, k) = k(())
             def areaEntered(name, _pos, body, k) =
