@@ -21,6 +21,7 @@ mod ViewerState {
         loadedScene = SceneTree.Node,   // 読み込んだシーンツリー
         treeState = TreeState,          // ツリーパネルの状態
         canvasState = CanvasState,      // キャンバスパネルの状態
+        debugView = Bool,              // true: 色分け矩形表示、false: テクスチャ表示
         prevKeys = Set[Engine.Key],     // 前フレームの押下キーセット（エッジ検出用）
         prevMousePressed = Bool         // 前フレームのマウスボタン状態（エッジ検出用）
     }
@@ -41,6 +42,7 @@ mod ViewerState {
         loadedScene = scene,
         treeState = initialTreeState(scene),
         canvasState = initialCanvasState(),
+        debugView = false,
         prevKeys = Set.empty(),
         prevMousePressed = false
     }

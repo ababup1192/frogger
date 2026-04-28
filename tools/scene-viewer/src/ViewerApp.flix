@@ -30,7 +30,7 @@ mod ViewerApp {
 
     /// 監視対象のキーを収集する
     def collectPressedKeys(): Set[Engine.Key] \ Engine.Game =
-        let keys = Engine.Key.Tab :: Engine.Key.R :: Engine.Key.Home ::
+        let keys = Engine.Key.Tab :: Engine.Key.R :: Engine.Key.Home :: Engine.Key.D ::
                    Engine.Key.Up :: Engine.Key.Down :: Engine.Key.Left :: Engine.Key.Right ::
                    Engine.Key.PageUp :: Engine.Key.PageDown ::
                    Engine.Key.LeftShift :: Engine.Key.RightShift :: Nil;
@@ -91,26 +91,31 @@ mod ViewerApp {
             } else if (Set.memberOf(Engine.Key.Home, jp)) {
                 {canvasState = CanvasPanel.initialView(afterPan#loadedScene) | afterPan}
             } else afterPan;
+        // デバッグ表示トグル（D キー）
+        let afterDebug =
+            if (Set.memberOf(Engine.Key.D, jp))
+                {debugView = not afterZoom#debugView | afterZoom}
+            else afterZoom;
         // マウスクリック処理
         let afterClick =
             if (mousePressed and not state#prevMousePressed) {
                 if (mouseX < ViewerConfig.treePanelWidth()) {
                     // ツリーパネルのクリック
-                    match TreePanel.hitTest(mouseX, mouseY, afterZoom#loadedScene, afterZoom#treeState) {
+                    match TreePanel.hitTest(mouseX, mouseY, afterDebug#loadedScene, afterDebug#treeState) {
                         case Some(nodeName) =>
-                            let newTreeState = afterZoom#treeState
+                            let newTreeState = afterDebug#treeState
                                 |> TreePanel.toggleExpand(nodeName);
-                            {treeState = {selectedNode = Some(nodeName) | newTreeState} | afterZoom}
-                        case None => afterZoom
+                            {treeState = {selectedNode = Some(nodeName) | newTreeState} | afterDebug}
+                        case None => afterDebug
                     }
                 } else if (mouseY > ViewerConfig.tabBarHeight()) {
                     // キャンバスパネルのクリック
-                    afterZoom
+                    afterDebug
                 } else {
                     // タブバーのクリック — ファイル選択
-                    handleTabClick(mouseX, afterZoom)
+                    handleTabClick(mouseX, afterDebug)
                 }
-            } else afterZoom;
+            } else afterDebug;
         // 入力状態を更新
         {prevKeys = currKeys, prevMousePressed = mousePressed | afterClick}
 
@@ -131,7 +136,7 @@ mod ViewerApp {
     def buildViewerScene(state: ViewerState.State): SceneTree.Node =
         let tabBar = buildTabBar(state);
         let treePanel = TreePanel.build(state#loadedScene, state#treeState);
-        let canvasPanel = CanvasPanel.build(state#loadedScene, state#canvasState, state#treeState#selectedNode);
+        let canvasPanel = CanvasPanel.build(state#loadedScene, state#canvasState, state#treeState#selectedNode, state#debugView);
         // パネル境界線
         let divider = Sprite2D.init({name = "divider",
                                      pos = {x = ViewerConfig.treePanelWidth() - 1.0f32,
@@ -167,7 +172,7 @@ mod ViewerApp {
                 let textColor = if (isActive) {r = 1.0f32, g = 1.0f32, b = 1.0f32}
                                 else {r = 0.6f32, g = 0.6f32, b = 0.6f32};
                 let tabLabel = Label2D.init({name = "tab_lbl_${index}",
-                                            pos = {x = tabX + 8.0f32, y = 12.0f32},
+                                            pos = {x = tabX + 8.0f32, y = 14.0f32},
                                             text = fileName, fontSize = 18.0f32,
                                             font = ViewerConfig.defaultFont()})
                                    |> Label2D.color(textColor);

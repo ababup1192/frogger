@@ -1,4 +1,4 @@
-// CanvasPanel — 右パネル: シーンのノードを色付き矩形で2D描画する
+// CanvasPanel — 右パネル: シーンのノードを2D描画する
 
 mod CanvasPanel {
     /// キャンバスパネルの X 開始位置
@@ -13,7 +13,7 @@ mod CanvasPanel {
     /// キャンバスの高さ
     def panelHeight(): Float32 = Int32.toFloat32(ViewerConfig.screenHeight()) - panelY()
 
-    /// シーンのバウンディングボックスを計算する（minX, minY, maxX, maxY）
+    /// シーンのバウンディングボックスを計算する
     def sceneBounds(node: SceneTree.Node, parentX: Float32, parentY: Float32): {minX = Float32, minY = Float32, maxX = Float32, maxY = Float32} =
         let SceneTree.Node.MkNode(_, pos, kind, nodeChildren) = node;
         let visual = NodeVisual.visualForKind(kind);
@@ -33,16 +33,13 @@ mod CanvasPanel {
         let bounds = sceneBounds(scene, 0.0f32, 0.0f32);
         let sceneW = bounds#maxX - bounds#minX;
         let sceneH = bounds#maxY - bounds#minY;
-        // シーンサイズが 0 のときはデフォルト
         if (sceneW < 1.0f32 and sceneH < 1.0f32)
             {panOffset = Vec2D.zero(), zoom = 1.0f32}
         else {
-            // パネルの80%に収まるようにズームを計算
             let marginRatio = 0.8f32;
             let zoomX = panelWidth() * marginRatio / sceneW;
             let zoomY = panelHeight() * marginRatio / sceneH;
             let zoom = Float32.min(zoomX, zoomY) |> Float32.min(2.0f32) |> Float32.max(0.1f32);
-            // シーンの中心をパネルの中心に合わせる
             let sceneCenterX = (bounds#minX + bounds#maxX) / 2.0f32;
             let sceneCenterY = (bounds#minY + bounds#maxY) / 2.0f32;
             let panX = panelWidth() / 2.0f32 - sceneCenterX * zoom;
@@ -57,35 +54,33 @@ mod CanvasPanel {
         let clampedY = canvasState#panOffset#y |> Float32.max(-limit) |> Float32.min(limit);
         {panOffset = {x = clampedX, y = clampedY} | canvasState}
 
-    /// シーンツリーを走査し、各ノードを色付き矩形として配置した Node を構築する
+    /// シーンツリーを走査し、ノードを描画する
     pub def build(scene: SceneTree.Node, canvasState: ViewerState.CanvasState,
-                  selectedNode: Option[String]): SceneTree.Node =
+                  selectedNode: Option[String], debugView: Bool): SceneTree.Node =
         let zoom = canvasState#zoom;
         let panX = canvasState#panOffset#x;
         let panY = canvasState#panOffset#y;
-        // キャンバス原点（パネル左上 + パンオフセット）
         let originX = panelX() + panX;
         let originY = panelY() + panY;
-        let children = buildNodes(scene, originX, originY, zoom, selectedNode, 0);
+        let children = buildNodes(scene, originX, originY, zoom, selectedNode, debugView);
         SceneTree.node2D("CanvasPanel", Vec2D.zero(), children)
 
-    /// ノードツリーを再帰的に走査し、各ノードの矩形 Sprite を生成する
+    /// ノードツリーを再帰的に走査し、各ノードを描画する
     def buildNodes(node: SceneTree.Node, parentX: Float32, parentY: Float32,
                    zoom: Float32, selectedNode: Option[String],
-                   depth: Int32): List[SceneTree.Node] =
+                   debugView: Bool): List[SceneTree.Node] =
         let SceneTree.Node.MkNode(name, pos, kind, nodeChildren) = node;
-        let visual = NodeVisual.visualForKind(kind);
-        // グローバル位置（親の累積位置 + 自身のローカル位置）
         let globalX = parentX + pos#x * zoom;
         let globalY = parentY + pos#y * zoom;
+        // テクスチャモード or デバッグモードで描画内容を切り替え
+        let spriteNodes = if (debugView)
+            buildDebugSprite(name, kind, globalX, globalY, zoom)
+        else
+            buildTextureSprite(name, kind, globalX, globalY, zoom);
+        // 選択中ノードのハイライト
+        let visual = NodeVisual.visualForKind(kind);
         let scaledW = visual#size#x * zoom;
         let scaledH = visual#size#y * zoom;
-        // ノードの矩形を Sprite2D で描画
-        let sprite =
-            Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
-                           size = {x = scaledW, y = scaledH}, texture = "white"})
-                |> Sprite2D.color(visual#color);
-        // 選択中ノードのハイライト（少し大きい半透明矩形を背面に配置）
         let highlight = match selectedNode {
             case Some(sel) if sel == name =>
                 let pad = 3.0f32;
@@ -96,14 +91,60 @@ mod CanvasPanel {
                     |> Sprite2D.color({r = 1.0f32, g = 1.0f32, b = 0.3f32}) :: Nil
             case _ => Nil
         };
-        // ノード名ラベル
-        let label = Label2D.init({name = "cv_lbl_${name}",
-                                  pos = {x = globalX, y = globalY - 18.0f32},
-                                  text = name, fontSize = 16.0f32,
-                                  font = ViewerConfig.defaultFont()})
-                        |> Label2D.color({r = 0.9f32, g = 0.9f32, b = 0.9f32});
+        // ノード名ラベル（デバッグモードのみ）
+        let labelNodes = if (debugView)
+            Label2D.init({name = "cv_lbl_${name}",
+                          pos = {x = globalX, y = globalY - 18.0f32},
+                          text = name, fontSize = 16.0f32,
+                          font = ViewerConfig.defaultFont()})
+                |> Label2D.color({r = 0.9f32, g = 0.9f32, b = 0.9f32}) :: Nil
+        else Nil;
         // 子ノードを再帰的に処理
         let childSprites = nodeChildren
-            |> List.flatMap(child -> buildNodes(child, globalX, globalY, zoom, selectedNode, depth + 1));
-        List.append(highlight, sprite :: label :: childSprites)
+            |> List.flatMap(child -> buildNodes(child, globalX, globalY, zoom, selectedNode, debugView));
+        List.append(highlight, List.append(spriteNodes, List.append(labelNodes, childSprites)))
+
+    /// デバッグモード: 色分け矩形で描画する
+    def buildDebugSprite(name: String, kind: SceneTree.NodeKind,
+                         globalX: Float32, globalY: Float32, zoom: Float32): List[SceneTree.Node] =
+        let visual = NodeVisual.visualForKind(kind);
+        let scaledW = visual#size#x * zoom;
+        let scaledH = visual#size#y * zoom;
+        Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
+                       size = {x = scaledW, y = scaledH}, texture = "white"})
+            |> Sprite2D.color(visual#color) :: Nil
+
+    /// テクスチャモード: スプライトの実テクスチャで描画する
+    def buildTextureSprite(name: String, kind: SceneTree.NodeKind,
+                           globalX: Float32, globalY: Float32, zoom: Float32): List[SceneTree.Node] =
+        match kind {
+            // Sprite2D: 実テクスチャを使用
+            case SceneTree.NodeKind.Sprite(sd) =>
+                let scaledW = sd#size#x * zoom;
+                let scaledH = sd#size#y * zoom;
+                Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
+                               size = {x = scaledW, y = scaledH}, texture = sd#texture})
+                    |> Sprite2D.color(sd#color) :: Nil
+            // AnimatedSprite2D: 現在のアニメーションの最初のフレームを使用
+            case SceneTree.NodeKind.AnimatedSprite(asd) =>
+                let scaledW = asd#size#x * zoom;
+                let scaledH = asd#size#y * zoom;
+                let texture = asd#animations
+                    |> Map.get(asd#currentAnimation)
+                    |> Option.flatMap(entry -> List.head(entry#frames))
+                    |> Option.getWithDefault("white");
+                Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
+                               size = {x = scaledW, y = scaledH}, texture = texture})
+                    |> Sprite2D.color(asd#color) :: Nil
+            // その他のノードは小さい半透明マーカーで表示
+            case _ =>
+                let visual = NodeVisual.visualForKind(kind);
+                let scaledW = visual#size#x * zoom;
+                let scaledH = visual#size#y * zoom;
+                if (scaledW > 1.0f32 and scaledH > 1.0f32)
+                    Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
+                                   size = {x = scaledW, y = scaledH}, texture = "white"})
+                        |> Sprite2D.color({r = visual#color#r, g = visual#color#g, b = visual#color#b}) :: Nil
+                else Nil
+        }
 }

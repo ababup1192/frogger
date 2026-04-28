@@ -161,6 +161,16 @@ mod FroggerScene {
          lives = state#lives - 1 | state}
 
     // ========================================================================
+    // Wrap All Lanes — vehicle, log, turtle wrapping in one pass
+    // ========================================================================
+
+    def wrapAllLanes(scene: SceneTree.Node): SceneTree.Node =
+        scene
+            |> VehicleLane.wrapVehicles
+            |> WaterLane.wrapLogs
+            |> TurtleLane.wrapTurtles
+
+    // ========================================================================
     // Water Zone Step — platform riding (log + turtle) + drown check
     // ========================================================================
 
@@ -195,61 +205,70 @@ mod FroggerScene {
         }
 
     // ========================================================================
-    // Frame Step — physics (stepAndCollide) + OnCollision + OnTimeout
+    // Frame Step (Dead) — physics + wrap + death timer timeout
+    // ========================================================================
+
+    def stepFrameDead(dt: Float32, state: SceneState): SceneState =
+        let movedScene = run {
+            SceneTree.stepAndCollide(state#scene, dt, physicsConfig())
+        } with handler SceneTree.OnCollision {
+            def bodyEntered(_name, _pos, _body, k) = k(())
+            def areaEntered(_name, _pos, _body, k) = k(())
+        };
+        let wrappedScene = movedScene
+            |> wrapAllLanes
+            |> SceneTree.stepAnimations(dt);
+        run {
+            let s = SceneTree.stepTimers(dt, wrappedScene);
+            {scene = s | state}
+        } with handler SceneTree.OnTimeout {
+            def timeout(name, k) =
+                let st = k(());
+                if (name == SceneTree.childName(Child.DeathTimer))
+                    if (st#lives > 0)
+                        {scene = FroggerPlayer.respawn(st#scene),
+                         timeRemaining = Game.initialTimeRemaining() | st}
+                    else
+                        st
+                else st
+        }
+
+    // ========================================================================
+    // Frame Step (Alive) — player move + physics + collision + water zone
+    // ========================================================================
+
+    def stepFrameAlive(dt: Float32, state: SceneState): SceneState =
+        let hitboxName = SceneTree.childName(FroggerPlayer.Child.Hitbox);
+        let playerScene = FroggerPlayer.stepFrame(dt, state#scene);
+        let collisionState = run {
+            let s = SceneTree.stepAndCollide(playerScene, dt, physicsConfig());
+            {scene = s |> wrapAllLanes |> SceneTree.stepAnimations(dt) | state}
+        } with handler SceneTree.OnCollision {
+            def bodyEntered(_name, _pos, _body, k) = k(())
+            def areaEntered(name, _pos, body, k) =
+                let st = k(());
+                if (name == hitboxName and not isPlayerDead(st#scene) and
+                    VehicleLane.isVehicle(body#name))
+                    triggerDeath(st)
+                else st
+        };
+        // Water zone: platform riding (log + turtle) + drown check
+        let water = stepWaterZone(dt, collisionState#scene);
+        let playerPos = SceneTree.globalPosition(FroggerPlayer.playerName(), water#scene);
+        if (water#shouldDrown and not isPlayerDead(water#scene))
+            triggerDeath({scene = water#scene | collisionState})
+        else
+            checkHomeSlot(water#atTarget, playerPos, {scene = water#scene | collisionState})
+
+    // ========================================================================
+    // Frame Step — dispatch to dead / alive path
     // ========================================================================
 
     pub def stepFrame(dt: Float32, state: SceneState): SceneState =
-        let hitboxName = SceneTree.childName(FroggerPlayer.Child.Hitbox);
-        if (isPlayerDead(state#scene)) {
-            // Death active: move vehicles/logs via physics, step timer, handle timeout
-            let movedScene = run {
-                SceneTree.stepAndCollide(state#scene, dt, physicsConfig())
-            } with handler SceneTree.OnCollision {
-                def bodyEntered(_name, _pos, _body, k) = k(())
-                def areaEntered(_name, _pos, _body, k) = k(())
-            };
-            let wrappedScene = movedScene
-                |> VehicleLane.wrapVehicles
-                |> WaterLane.wrapLogs
-                |> TurtleLane.wrapTurtles
-                |> SceneTree.stepAnimations(dt);
-            run {
-                let s = SceneTree.stepTimers(dt, wrappedScene);
-                {scene = s | state}
-            } with handler SceneTree.OnTimeout {
-                def timeout(name, k) =
-                    let st = k(());
-                    if (name == SceneTree.childName(Child.DeathTimer))
-                        if (st#lives > 0)
-                            {scene = FroggerPlayer.respawn(st#scene),
-                             timeRemaining = Game.initialTimeRemaining() | st}
-                        else
-                            st
-                    else st
-            }
-        } else {
-            // Normal: move player, then physics step with collision detection
-            let playerScene = FroggerPlayer.stepFrame(dt, state#scene);
-            let collisionState = run {
-                let s = SceneTree.stepAndCollide(playerScene, dt, physicsConfig());
-                {scene = s |> VehicleLane.wrapVehicles |> WaterLane.wrapLogs |> TurtleLane.wrapTurtles |> SceneTree.stepAnimations(dt) | state}
-            } with handler SceneTree.OnCollision {
-                def bodyEntered(_name, _pos, _body, k) = k(())
-                def areaEntered(name, _pos, body, k) =
-                    let st = k(());
-                    if (name == hitboxName and not isPlayerDead(st#scene) and
-                        VehicleLane.isVehicle(body#name))
-                        triggerDeath(st)
-                    else st
-            };
-            // Water zone: platform riding (log + turtle) + drown check
-            let water = stepWaterZone(dt, collisionState#scene);
-            let playerPos = SceneTree.globalPosition(FroggerPlayer.playerName(), water#scene);
-            if (water#shouldDrown and not isPlayerDead(water#scene))
-                triggerDeath({scene = water#scene | collisionState})
-            else
-                checkHomeSlot(water#atTarget, playerPos, {scene = water#scene | collisionState})
-        }
+        if (isPlayerDead(state#scene))
+            stepFrameDead(dt, state)
+        else
+            stepFrameAlive(dt, state)
 
     // ========================================================================
     // stepScene — 1フレームのシーン更新を統合
