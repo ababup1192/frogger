@@ -194,11 +194,9 @@ mod WaterLane {
     // Drown Check — player is in water without a log, or carried off screen
     // ========================================================================
 
-    pub def shouldDrown(atTarget: Bool, scene: SceneTree.Node): Bool =
+    pub def shouldDrown(atTarget: Bool, onPlatform: Bool, scene: SceneTree.Node): Bool =
         let inWater = SceneTree.globalPosition(FroggerPlayer.playerName(), scene)
             |> Option.map(pos -> isInWaterZone(pos#y))
             |> Option.getWithDefault(false);
-        let onPlatform = not Option.isEmpty(findOverlappingLogVelocity(scene))
-            or not Option.isEmpty(TurtleLane.findOverlappingTurtleVelocity(scene));
         (atTarget and inWater and not onPlatform) or isPlayerOffScreen(scene)
 }

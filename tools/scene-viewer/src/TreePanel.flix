@@ -5,7 +5,7 @@ mod TreePanel {
     def rowHeight(): Float32 = 28.0f32
 
     /// インデントの幅（ピクセル／深さ1あたり）
-    def indentWidth(): Float32 = 16.0f32
+    def indentWidth(): Float32 = 24.0f32
 
     /// テキストの開始 X 位置
     def textStartX(): Float32 = 8.0f32

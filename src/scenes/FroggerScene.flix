@@ -161,6 +161,21 @@ mod FroggerScene {
          lives = state#lives - 1 | state}
 
     // ========================================================================
+    // Water Zone Step — platform riding (log + turtle) + drown check
+    // ========================================================================
+
+    def stepWaterZone(dt: Float32, scene: SceneTree.Node):
+            {scene = SceneTree.Node, atTarget = Bool, shouldDrown = Bool} =
+        let ridingScene = scene
+            |> WaterLane.applyPlatformRiding(dt)
+            |> TurtleLane.applyPlatformRiding(dt);
+        let atTarget = FroggerPlayer.isAtTarget(ridingScene);
+        let onPlatform = not Option.isEmpty(WaterLane.findOverlappingLogVelocity(ridingScene))
+            or not Option.isEmpty(TurtleLane.findOverlappingTurtleVelocity(ridingScene));
+        {scene = ridingScene, atTarget = atTarget,
+         shouldDrown = WaterLane.shouldDrown(atTarget, onPlatform, ridingScene)}
+
+    // ========================================================================
     // Home Slot Check — player reached home zone
     // ========================================================================
 
@@ -227,18 +242,13 @@ mod FroggerScene {
                         triggerDeath(st)
                     else st
             };
-            // Platform riding (log or turtle) + water zone death check
-            let ridingScene = collisionState#scene
-                |> WaterLane.applyPlatformRiding(dt)
-                |> TurtleLane.applyPlatformRiding(dt);
-            let atTarget = FroggerPlayer.isAtTarget(ridingScene);
-            let drown = WaterLane.shouldDrown(atTarget, ridingScene);
-            let playerPos = SceneTree.globalPosition(FroggerPlayer.playerName(), ridingScene);
-            if (drown and not isPlayerDead(ridingScene))
-                triggerDeath({scene = ridingScene | collisionState})
+            // Water zone: platform riding (log + turtle) + drown check
+            let water = stepWaterZone(dt, collisionState#scene);
+            let playerPos = SceneTree.globalPosition(FroggerPlayer.playerName(), water#scene);
+            if (water#shouldDrown and not isPlayerDead(water#scene))
+                triggerDeath({scene = water#scene | collisionState})
             else
-                // Home slot check — player reached home zone
-                checkHomeSlot(atTarget, playerPos, {scene = ridingScene | collisionState})
+                checkHomeSlot(water#atTarget, playerPos, {scene = water#scene | collisionState})
         }
 
     // ========================================================================

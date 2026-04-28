@@ -49,5 +49,5 @@ mod SceneBrowser {
         {currentFileIndex = index,
          loadedScene = scene,
          treeState = ViewerState.initialTreeState(scene),
-         canvasState = ViewerState.initialCanvasState() | state}
+         canvasState = CanvasPanel.initialView(scene) | state}
 }

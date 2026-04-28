@@ -7,15 +7,65 @@ mod CanvasPanel {
     /// キャンバスパネルの Y 開始位置（タブバーの下）
     def panelY(): Float32 = ViewerConfig.tabBarHeight()
 
+    /// キャンバスの幅
+    def panelWidth(): Float32 = Int32.toFloat32(ViewerConfig.screenWidth()) - panelX()
+
+    /// キャンバスの高さ
+    def panelHeight(): Float32 = Int32.toFloat32(ViewerConfig.screenHeight()) - panelY()
+
+    /// シーンのバウンディングボックスを計算する（minX, minY, maxX, maxY）
+    def sceneBounds(node: SceneTree.Node, parentX: Float32, parentY: Float32): {minX = Float32, minY = Float32, maxX = Float32, maxY = Float32} =
+        let SceneTree.Node.MkNode(_, pos, kind, nodeChildren) = node;
+        let visual = NodeVisual.visualForKind(kind);
+        let gx = parentX + pos#x;
+        let gy = parentY + pos#y;
+        let thisBox = {minX = gx, minY = gy, maxX = gx + visual#size#x, maxY = gy + visual#size#y};
+        nodeChildren |> List.foldLeft((acc, child) -> {
+            let cb = sceneBounds(child, gx, gy);
+            {minX = Float32.min(acc#minX, cb#minX),
+             minY = Float32.min(acc#minY, cb#minY),
+             maxX = Float32.max(acc#maxX, cb#maxX),
+             maxY = Float32.max(acc#maxY, cb#maxY)}
+        }, thisBox)
+
+    /// シーン全体がキャンバスに収まる初期ズームとオフセットを計算する
+    pub def initialView(scene: SceneTree.Node): ViewerState.CanvasState =
+        let bounds = sceneBounds(scene, 0.0f32, 0.0f32);
+        let sceneW = bounds#maxX - bounds#minX;
+        let sceneH = bounds#maxY - bounds#minY;
+        // シーンサイズが 0 のときはデフォルト
+        if (sceneW < 1.0f32 and sceneH < 1.0f32)
+            {panOffset = Vec2D.zero(), zoom = 1.0f32}
+        else {
+            // パネルの80%に収まるようにズームを計算
+            let marginRatio = 0.8f32;
+            let zoomX = panelWidth() * marginRatio / sceneW;
+            let zoomY = panelHeight() * marginRatio / sceneH;
+            let zoom = Float32.min(zoomX, zoomY) |> Float32.min(2.0f32) |> Float32.max(0.1f32);
+            // シーンの中心をパネルの中心に合わせる
+            let sceneCenterX = (bounds#minX + bounds#maxX) / 2.0f32;
+            let sceneCenterY = (bounds#minY + bounds#maxY) / 2.0f32;
+            let panX = panelWidth() / 2.0f32 - sceneCenterX * zoom;
+            let panY = panelHeight() / 2.0f32 - sceneCenterY * zoom;
+            {panOffset = {x = panX, y = panY}, zoom = zoom}
+        }
+
+    /// パンオフセットをクランプして画面外に出ないようにする
+    pub def clampPan(canvasState: ViewerState.CanvasState): ViewerState.CanvasState =
+        let limit = 2000.0f32;
+        let clampedX = canvasState#panOffset#x |> Float32.max(-limit) |> Float32.min(limit);
+        let clampedY = canvasState#panOffset#y |> Float32.max(-limit) |> Float32.min(limit);
+        {panOffset = {x = clampedX, y = clampedY} | canvasState}
+
     /// シーンツリーを走査し、各ノードを色付き矩形として配置した Node を構築する
     pub def build(scene: SceneTree.Node, canvasState: ViewerState.CanvasState,
                   selectedNode: Option[String]): SceneTree.Node =
         let zoom = canvasState#zoom;
         let panX = canvasState#panOffset#x;
         let panY = canvasState#panOffset#y;
-        // キャンバス原点（パネル中央にオフセット）
-        let originX = panelX() + 200.0f32 + panX;
-        let originY = panelY() + 100.0f32 + panY;
+        // キャンバス原点（パネル左上 + パンオフセット）
+        let originX = panelX() + panX;
+        let originY = panelY() + panY;
         let children = buildNodes(scene, originX, originY, zoom, selectedNode, 0);
         SceneTree.node2D("CanvasPanel", Vec2D.zero(), children)
 
@@ -48,7 +98,7 @@ mod CanvasPanel {
         };
         // ノード名ラベル
         let label = Label2D.init({name = "cv_lbl_${name}",
-                                  pos = {x = globalX, y = globalY - 14.0f32},
+                                  pos = {x = globalX, y = globalY - 18.0f32},
                                   text = name, fontSize = 16.0f32,
                                   font = ViewerConfig.defaultFont()})
                         |> Label2D.color({r = 0.9f32, g = 0.9f32, b = 0.9f32});

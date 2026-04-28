@@ -5,8 +5,13 @@ mod ViewerApp {
     pub def start(sceneFiles: List[String]): Unit \ {Engine.Game, Engine.Mouse, Fs.FileRead} =
         let firstFile = sceneFiles |> List.head |> Option.getWithDefault("");
         let scene = SceneLoader.loadScene(firstFile);
-        let state = ViewerState.initialState(sceneFiles, scene);
+        let state = ViewerState.initialState(sceneFiles, scene)
+            |> applyInitialView;
         discard runLoop(state)
+
+    /// シーンに合わせた初期ビューを適用する
+    def applyInitialView(state: ViewerState.State): ViewerState.State =
+        {canvasState = CanvasPanel.initialView(state#loadedScene) | state}
 
     /// メインループ（末尾再帰）
     @Tailrec
@@ -72,10 +77,10 @@ mod ViewerApp {
                      (if (Engine.Game.isKeyPressed(Engine.Key.Up)) panSpeed else 0.0f32);
             if (dx != 0.0f32 or dy != 0.0f32)
                 let newPan = Vec2D.add(afterSwitch#canvasState#panOffset, {x = dx, y = dy});
-                {canvasState = {panOffset = newPan | afterSwitch#canvasState} | afterSwitch}
+                {canvasState = {panOffset = newPan | afterSwitch#canvasState} |> CanvasPanel.clampPan | afterSwitch}
             else afterSwitch
         };
-        // ズーム操作（= / -）
+        // ズーム操作（PageUp / PageDown）
         let afterZoom =
             if (Set.memberOf(Engine.Key.PageUp, jp)) {
                 let newZoom = Float32.min(4.0f32, afterPan#canvasState#zoom + 0.25f32);
@@ -84,7 +89,7 @@ mod ViewerApp {
                 let newZoom = Float32.max(0.25f32, afterPan#canvasState#zoom - 0.25f32);
                 {canvasState = {zoom = newZoom | afterPan#canvasState} | afterPan}
             } else if (Set.memberOf(Engine.Key.Home, jp)) {
-                {canvasState = ViewerState.initialCanvasState() | afterPan}
+                {canvasState = CanvasPanel.initialView(afterPan#loadedScene) | afterPan}
             } else afterPan;
         // マウスクリック処理
         let afterClick =
@@ -162,7 +167,7 @@ mod ViewerApp {
                 let textColor = if (isActive) {r = 1.0f32, g = 1.0f32, b = 1.0f32}
                                 else {r = 0.6f32, g = 0.6f32, b = 0.6f32};
                 let tabLabel = Label2D.init({name = "tab_lbl_${index}",
-                                            pos = {x = tabX + 8.0f32, y = 8.0f32},
+                                            pos = {x = tabX + 8.0f32, y = 12.0f32},
                                             text = fileName, fontSize = 18.0f32,
                                             font = ViewerConfig.defaultFont()})
                                    |> Label2D.color(textColor);
