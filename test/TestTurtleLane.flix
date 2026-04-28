@@ -243,7 +243,7 @@ def testTurtleWrapXLeftMovingInBounds(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testNoTurtleOverlapAtStartPos(): Unit \ Assert =
+def testNoTurtleOverlapAtStartPos(): Unit \ {Assert, Fs.FileRead} =
     // スタート地点(y=832)ではどの亀とも重ならない
     let scene = FroggerScene.buildInitialScene();
     Assert.assertTrue(Option.isEmpty(TurtleLane.findOverlappingTurtleVelocity(scene)))
@@ -289,7 +289,7 @@ def testTurtleMovesLeftward(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testShouldNotDrownOnTurtle(): Unit \ Assert =
+def testShouldNotDrownOnTurtle(): Unit \ {Assert, Fs.FileRead} =
     // 水域内(y=320)かつ亀セクション(T4_0)の上 → 溺死しない
     //   ┌────────────────────────┐
     //   │  T4_0 [亀][亀][亀]     │  ←プレイヤーが亀の上
@@ -312,13 +312,13 @@ def testShouldNotDrownOnTurtle(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testIsAtTargetWhenAtTarget(): Unit \ Assert =
+def testIsAtTargetWhenAtTarget(): Unit \ {Assert, Fs.FileRead} =
     // プレイヤーがスタート地点にいる（pos == targetPos） → isAtTarget = true
     let scene = FroggerScene.buildInitialScene();
     Assert.assertTrue(FroggerPlayer.isAtTarget(scene))
 
 @Test
-def testIsAtTargetWhenMoving(): Unit \ Assert =
+def testIsAtTargetWhenMoving(): Unit \ {Assert, Fs.FileRead} =
     // プレイヤーが移動中（pos != targetPos） → isAtTarget = false
     //   中央分離帯(y=448)から上ボタンを押した直後:
     //     pos = y=440 (まだ中間位置)
@@ -330,7 +330,7 @@ def testIsAtTargetWhenMoving(): Unit \ Assert =
     Assert.assertFalse(FroggerPlayer.isAtTarget(scene))
 
 @Test
-def testNoDrownWhileMovingIntoWaterZone(): Unit \ Assert =
+def testNoDrownWhileMovingIntoWaterZone(): Unit \ {Assert, Fs.FileRead} =
     // 移動中(pos≠targetPos)に水域内にいても溺死しない
     //   pos = y=440 (水域内, 64 ≤ y < 448)
     //   targetPos = y=384 (まだ到達していない)
@@ -355,14 +355,14 @@ def testNoDrownWhileMovingIntoWaterZone(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testInitialSceneContainsTurtleLanes(): Unit \ Assert =
+def testInitialSceneContainsTurtleLanes(): Unit \ {Assert, Fs.FileRead} =
     match SceneTree.findNode("TurtleLanes", FroggerScene.buildInitialScene()) {
         case Some(container) => Assert.assertEq(expected = "TurtleLanes", SceneTree.nodeName(container))
         case None => bug!("TurtleLanes not found in initial scene")
     }
 
 @Test
-def testInitialSceneTurtleLaneHas2Lanes(): Unit \ Assert =
+def testInitialSceneTurtleLaneHas2Lanes(): Unit \ {Assert, Fs.FileRead} =
     match SceneTree.findNode("TurtleLanes", FroggerScene.buildInitialScene()) {
         case Some(container) => Assert.assertEq(expected = 2,
             SceneTree.nodeChildren(container) |> List.length)

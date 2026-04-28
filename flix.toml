@@ -5,6 +5,9 @@ version     = "0.1.0"
 flix        = "0.71.0"
 authors     = ["John Doe <john@example.com>"]
 
+[dependencies]
+"github:mlutze/flix-json" = "0.13.1"
+
 [mvn-dependencies]
 "com.formdev:flatlaf" = "3.7.1"
 "org.lwjgl:lwjgl" = "3.3.4"

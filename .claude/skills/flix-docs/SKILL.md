@@ -28,6 +28,18 @@ Flixコードを書く・修正する前に、公式LLM向けドキュメント�
 
 ### 全般
 
+- **変数名は省略せず、意味が伝わる名前にすること**
+  - 型がある場合は、まず型名と揃えられないかを検討する
+  - `p` → `player`、`scn` → `scene`、`btn` → `button` のように省略しない
+
+```flix
+// NG: 略しすぎて意味が伝わらない
+def update(p: Player, scn: Scene): Scene = ...
+
+// OK: 型名と揃えて明確にする
+def update(player: Player, scene: Scene): Scene = ...
+```
+
 - 関数には必ずドキュメントコメントを書くこと。何の処理をしているか、意図が読み手に明確に伝わること
 - ドキュメントコメントは、汎用的なものを除いて、専門用語を避けて、平易な言葉で説明すること
 - type alias でレコード定義、enum、struct は、全体のコメントと各フィールドの役割のコメントを書くこと
@@ -46,10 +58,67 @@ Flixコードを書く・修正する前に、公式LLM向けドキュメント�
 - `map`, `flatMap` などが続いたら、`forM` が使えないか検討すること
 - `map`, `filter` などが続いたら、`filterMap` 等の関数が使えないか検討すること
 
-### ライブラリ選択
+### Algebraic Effect の扱い方
 
-- Random は、Java の API を使わず `Math.Random`, `Math.Shuffle` を使う。うまくいかない場合は、RandomUtil を拡張
-- ファイル操作は、[Fs](https://api.flix.dev/Fs.html), [BufReader](https://api.flix.dev/BufReader.html) を検討
+- **エフェクトはすぐに `run` せず、呼び出し元へ伝播させること**
+  - その場で `run` すると IO に変換され、関数シグネチャが `IO` だらけになる
+  - IO が伝播すると「何の副作用が起きているか」が型から読み取れなくなる
+  - エフェクトを具体的に残すことで、関数の副作用が明示的になる
+
+```flix
+// NG: その場で run して IO に変換してしまう
+def getTimestamp(): Int64 \ IO =
+    run Clock.currentTime(TimeUnit.Milliseconds) with Clock.runWithIO
+
+// OK: エフェクトを伝播させる（run は呼び出し元に任せる）
+def getTimestamp(): Int64 \ Clock =
+    Clock.currentTime(TimeUnit.Milliseconds)
+```
+
+- **ハンドラの選択は以下の優先順位に従うこと**
+  1. **DefaultHandler（何も指定しない）** — `main` や `@Test` ではコンパイラが `@DefaultHandler` を自動挿入するので、明示的なハンドラは不要
+  2. **組み込みハンドラを `with` で指定** — ライブラリが提供する `runWithIO` 等を使う
+  3. **`with handler` で手書き** — カスタムの振る舞いが必要な場合の最終手段
+
+```flix
+// 優先度1: DefaultHandler に任せる（推奨）
+// main や @Test ではエフェクトをシグネチャに書くだけでよい
+def main(): Unit \ {Clock, Logger} =
+    let ts = Clock.currentTime(TimeUnit.Milliseconds);
+    Logger.info("Timestamp: ${ts}")
+
+// 優先度2: 組み込みハンドラを with で指定
+def example(): Unit \ IO =
+    run someEffectfulWork() with Clock.runWithIO
+
+// 優先度3: 手書き handler（最終手段）
+def example2(): Unit \ IO =
+    run someEffectfulWork() with handler Clock {
+        def currentTime(u, k) = k(0i64)
+    }
+```
+
+- 参考: https://doc.flix.dev/default-handlers.html
+
+### ライブラリ選択（Java interop より標準ライブラリを優先）
+
+Java の API を直接使う前に、Flix 標準ライブラリに同等の機能がないか必ず確認すること。
+API リファレンス: https://api.flix.dev/
+
+- **Random**: `Math.Random`, `Math.Shuffle` を使う。うまくいかない場合は RandomUtil を拡張
+- **ファイル読み書き**: `Fs` モジュールを使う（Java の `Files` / `FileInputStream` 等は使わない）
+  - `Fs.readFile`, `Fs.writeFile`, `Fs.readLines`, `Fs.writeLines`
+  - `Fs.appendFile`, `Fs.appendLines`
+  - `Fs.fileExists`, `Fs.fileSize`, `Fs.deleteFile`, `Fs.copyFile`, `Fs.moveFile`
+- **ストリーム処理 / バッファ読み込み**: `BufReader` を使う
+  - `BufReader.withDefaultCapacity(rc, reader)` で生成
+  - `BufReader.readWhile`, `BufReader.peek`, `BufReader.read`, `BufReader.skip`
+- **数値型変換**: 各型のモジュールにある変換関数を使う（Java の `Integer.parseInt` 等は使わない）
+  - 安全な縮小変換: `Int32.tryToInt8`, `Int32.tryToInt16` → `Option` を返す
+  - 拡大変換: `Int32.toInt64`, `Int32.toFloat64` → 精度を保つ
+  - 文字列変換: `Int32.fromString` → `Option[Int32]`, `Int32.toString`
+  - Float も同様: `Float64.fromString`, `Float32.toFloat64` など
+  - `truncateToXxx` は精度が落ちるので意図的な場合のみ使用
 
 ---
 

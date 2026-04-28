@@ -1,0 +1,32 @@
+{
+  "type": "CharacterBody2D",
+  "name": "Player",
+  "pos": [384, 832],
+  "moveSpeed": 512,
+  "children": [
+    {
+      "type": "AnimatedSprite2D",
+      "name": "Sprite",
+      "pos": [0, 0],
+      "size": [64, 64],
+      "animations": {
+        "idle": ["FroggerIdle", "FroggerLeap"],
+        "dead": ["FroggerDead"]
+      },
+      "initialAnimation": "idle",
+      "fps": 4
+    },
+    {
+      "type": "Area2D",
+      "name": "Hitbox",
+      "pos": [16, 20],
+      "children": [
+        {
+          "type": "RectShape2D",
+          "name": "Shape",
+          "size": [32, 24]
+        }
+      ]
+    }
+  ]
+}

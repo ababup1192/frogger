@@ -239,7 +239,7 @@ def testVehicleIsArea2D(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testInitialSceneContainsVehicleLanes(): Unit \ Assert =
+def testInitialSceneContainsVehicleLanes(): Unit \ {Assert, Fs.FileRead} =
     match SceneTree.findNode("VehicleLanes", FroggerScene.buildInitialScene()) {
         case Some(container) => Assert.assertEq(expected = "VehicleLanes", SceneTree.nodeName(container))
         case None            => Assert.assertTrue(false)

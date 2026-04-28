@@ -224,7 +224,7 @@ def testUnfilledSlotSpriteNotVisible(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testInitialSceneContainsHomeSlots(): Unit \ Assert =
+def testInitialSceneContainsHomeSlots(): Unit \ {Assert, Fs.FileRead} =
     match SceneTree.findNode("HomeSlots", FroggerScene.buildInitialScene()) {
         case Some(container) =>
             Assert.assertEq(expected = "HomeSlots", SceneTree.nodeName(container))
@@ -232,7 +232,7 @@ def testInitialSceneContainsHomeSlots(): Unit \ Assert =
     }
 
 @Test
-def testInitialSceneHomeSlotsHas5Children(): Unit \ Assert =
+def testInitialSceneHomeSlotsHas5Children(): Unit \ {Assert, Fs.FileRead} =
     match SceneTree.findNode("HomeSlots", FroggerScene.buildInitialScene()) {
         case Some(container) =>
             Assert.assertEq(expected = 5,

@@ -19,66 +19,63 @@ mod FroggerPlayer {
     // Constants
     // ========================================================================
 
-    pub def cellSize(): Float32 = 64.0f32
-
-    pub def startPos(): Vec2D.Vec2 = {x = 384.0f32, y = 832.0f32}
-
-    pub def moveSpeed(): Float32 = 512.0f32
-
-    def minBound(): Vec2D.Vec2 = {x = 0.0f32, y = 0.0f32}
-
-    def maxBound(): Vec2D.Vec2 = {x = 720.0f32, y = 832.0f32}
-
     pub def playerName(): String = "Player"
 
-    pub def playerHitboxSize(): Vec2D.Vec2 = {x = 32.0f32, y = 24.0f32}
+    /// プレイヤーの初期スポーン位置
+    pub def startPos(): Vec2D.Vec2 = {x = 384.0f32, y = 832.0f32}
 
-    pub def playerHitboxOffset(): Vec2D.Vec2 = {x = 16.0f32, y = 20.0f32}
+    // ========================================================================
+    // PlayerConfig — シーンツリー上のプレイヤーノードからプロパティを取得
+    // ========================================================================
+
+    pub type alias PlayerConfig = {
+        cellSize  = Float32,
+        moveSpeed = Float32
+    }
+
+    /// シーン内のプレイヤーノードから設定を取り出す（純粋関数）
+    pub def loadConfig(scene: SceneTree.Node): PlayerConfig =
+        let config = forM (
+            player <- SceneTree.findNode(playerName(), scene);
+            cbd    <- SceneTree.characterBodyData(player);
+            asd    <- SceneTree.findAnimatedSpriteData(SceneTree.childName(Child.Sprite), player)
+        ) yield {cellSize = asd#size#x, moveSpeed = cbd#moveSpeed};
+        match config {
+            case Some(c) => c
+            case None => bug!("Player config extraction failed")
+        }
 
     /// プレイヤーのスプライト中心座標を返す（プラットフォーム乗り判定用）
-    pub def playerCenter(pos: Vec2D.Vec2): Vec2D.Vec2 =
-        {x = pos#x + cellSize() / 2.0f32, y = pos#y + cellSize() / 2.0f32}
+    pub def playerCenter(pos: Vec2D.Vec2, config: PlayerConfig): Vec2D.Vec2 =
+        {x = pos#x + config#cellSize / 2.0f32, y = pos#y + config#cellSize / 2.0f32}
 
     // ========================================================================
     // Node Builder
     // ========================================================================
 
-    def playerAnimations(): Map[String, SceneTree.AnimationEntry] =
-        Map.empty()
-            |> Map.insert("idle", {frames = "FroggerIdle" :: "FroggerLeap" :: Nil})
-            |> Map.insert("dead", {frames = "FroggerDead" :: Nil})
-
-    pub def buildPlayer(): SceneTree.Node =
-        let sprite = AnimatedSprite2D.init({name = SceneTree.childName(Child.Sprite), pos = Vec2D.zero(),
-                                            size = {x = cellSize(), y = cellSize()},
-                                            animations = playerAnimations(),
-                                            initialAnimation = "idle"})
-            |> AnimatedSprite2D.fps(4.0f32);
-        let hitboxShape = RectShape2D.init({name = "Shape", size = playerHitboxSize()});
-        let hitbox = Area2D.init({name = SceneTree.childName(Child.Hitbox),
-                                  pos = playerHitboxOffset(),
-                                  children = hitboxShape :: Nil});
-        CharacterBody2D.init({name = playerName(), pos = startPos(),
-                              children = sprite :: hitbox :: Nil})
-            |> CharacterBody2D.moveSpeed(moveSpeed())
+    /// シーンファイルからプレイヤーノードを構築する
+    pub def buildPlayer(): SceneTree.Node \ Fs.FileRead =
+        SceneLoader.loadScene("src/scenes/FroggerPlayer.scene.json")
 
     // ========================================================================
     // Movement — Compute New Target (pure)
     // ========================================================================
 
-    pub def computeNewTarget(dir: SceneTree.Direction, currentTarget: Vec2D.Vec2): Vec2D.Vec2 =
-        let delta = Vec2D.mul(SceneTree.directionToVec(dir), cellSize());
+    pub def computeNewTarget(dir: SceneTree.Direction, currentTarget: Vec2D.Vec2, config: PlayerConfig): Vec2D.Vec2 =
+        let delta = Vec2D.mul(SceneTree.directionToVec(dir), config#cellSize);
         let raw = Vec2D.add(currentTarget, delta);
-        Vec2D.clamp(raw, minBound(), maxBound())
+        let (minB, maxB) = FroggerScene.playerBounds();
+        Vec2D.clamp(raw, minB, maxB)
 
     // ========================================================================
     // Input Application — update targetPos on CharacterBody + rotate sprite
     // ========================================================================
 
     pub def applyInput(dir: SceneTree.Direction, scene: SceneTree.Node): SceneTree.Node =
+        let config = loadConfig(scene);
         scene
             |> SceneTree.updateCharacterBody(playerName(), cbd ->
-                {targetPos = computeNewTarget(dir, cbd#targetPos) | cbd})
+                {targetPos = computeNewTarget(dir, cbd#targetPos, config) | cbd})
             |> SceneTree.updateChildAnimatedSprite(playerName(), asd ->
                 {rotation = SceneTree.directionToRotation(dir) | asd})
 
@@ -91,9 +88,10 @@ mod FroggerPlayer {
             AnimatedSprite2D.switchAnimation("dead", false), scene)
 
     pub def respawn(scene: SceneTree.Node): SceneTree.Node =
+        let sp = startPos();
         scene
-            |> SceneTree.setNodePosition(playerName(), startPos())
-            |> SceneTree.updateCharacterBody(playerName(), cbd -> {targetPos = startPos() | cbd})
+            |> SceneTree.setNodePosition(playerName(), sp)
+            |> SceneTree.updateCharacterBody(playerName(), cbd -> {targetPos = sp | cbd})
             |> SceneTree.updateChildAnimatedSprite(playerName(),
                 AnimatedSprite2D.switchAnimation("idle", true))
 

@@ -5,7 +5,7 @@
 // ========================================================================
 
 @Test
-def testPlayerIsCharacterBody(): Unit \ Assert =
+def testPlayerIsCharacterBody(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     match SceneTree.nodeKind(player) {
         case SceneTree.NodeKind.Character(_) => Assert.assertTrue(true)
@@ -13,19 +13,19 @@ def testPlayerIsCharacterBody(): Unit \ Assert =
     }
 
 @Test
-def testPlayerName(): Unit \ Assert =
+def testPlayerName(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     Assert.assertEq(expected = "Player", SceneTree.nodeName(player))
 
 @Test
-def testPlayerPosition(): Unit \ Assert =
+def testPlayerPosition(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     let pos = SceneTree.nodePosition(player);
     Assert.assertEq(expected = 384.0f32, pos#x);
     Assert.assertEq(expected = 832.0f32, pos#y)
 
 @Test
-def testPlayerMoveSpeed(): Unit \ Assert =
+def testPlayerMoveSpeed(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     match SceneTree.characterBodyData(player) {
         case Some(cbd) => Assert.assertEq(expected = 512.0f32, cbd#moveSpeed)
@@ -33,7 +33,7 @@ def testPlayerMoveSpeed(): Unit \ Assert =
     }
 
 @Test
-def testPlayerInitialTargetPos(): Unit \ Assert =
+def testPlayerInitialTargetPos(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     match SceneTree.characterBodyData(player) {
         case Some(cbd) =>
@@ -43,7 +43,7 @@ def testPlayerInitialTargetPos(): Unit \ Assert =
     }
 
 @Test
-def testPlayerSpriteChildName(): Unit \ Assert =
+def testPlayerSpriteChildName(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     match SceneTree.findNode("Sprite", player) {
         case Some(sprite) => Assert.assertEq(expected = "Sprite", SceneTree.nodeName(sprite))
@@ -51,7 +51,7 @@ def testPlayerSpriteChildName(): Unit \ Assert =
     }
 
 @Test
-def testPlayerSpriteAnimation(): Unit \ Assert =
+def testPlayerSpriteAnimation(): Unit \ {Assert, Fs.FileRead} =
     // プレイヤーのスプライトは AnimatedSprite で、初期アニメーションが "idle"
     let player = FroggerPlayer.buildPlayer();
     match SceneTree.findNode("Sprite", player) {
@@ -64,7 +64,7 @@ def testPlayerSpriteAnimation(): Unit \ Assert =
     }
 
 @Test
-def testPlayerSpriteSize(): Unit \ Assert =
+def testPlayerSpriteSize(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     match SceneTree.findNode("Sprite", player) {
         case Some(sprite) => match SceneTree.nodeKind(sprite) {
@@ -80,47 +80,55 @@ def testPlayerSpriteSize(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testComputeNewTargetMoveUp(): Unit \ Assert =
-    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Up, {x = 384.0f32, y = 832.0f32});
+def testComputeNewTargetMoveUp(): Unit \ {Assert, Fs.FileRead} =
+    let config = FroggerPlayer.loadConfig(FroggerScene.buildInitialScene());
+    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Up, {x = 384.0f32, y = 832.0f32}, config);
     Assert.assertEq(expected = 384.0f32, result#x);
     Assert.assertEq(expected = 768.0f32, result#y)
 
 @Test
-def testComputeNewTargetMoveDown(): Unit \ Assert =
-    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Down, {x = 384.0f32, y = 768.0f32});
+def testComputeNewTargetMoveDown(): Unit \ {Assert, Fs.FileRead} =
+    let config = FroggerPlayer.loadConfig(FroggerScene.buildInitialScene());
+    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Down, {x = 384.0f32, y = 768.0f32}, config);
     Assert.assertEq(expected = 384.0f32, result#x);
     Assert.assertEq(expected = 832.0f32, result#y)
 
 @Test
-def testComputeNewTargetMoveLeft(): Unit \ Assert =
-    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Left, {x = 384.0f32, y = 832.0f32});
+def testComputeNewTargetMoveLeft(): Unit \ {Assert, Fs.FileRead} =
+    let config = FroggerPlayer.loadConfig(FroggerScene.buildInitialScene());
+    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Left, {x = 384.0f32, y = 832.0f32}, config);
     Assert.assertEq(expected = 320.0f32, result#x);
     Assert.assertEq(expected = 832.0f32, result#y)
 
 @Test
-def testComputeNewTargetMoveRight(): Unit \ Assert =
-    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Right, {x = 384.0f32, y = 832.0f32});
+def testComputeNewTargetMoveRight(): Unit \ {Assert, Fs.FileRead} =
+    let config = FroggerPlayer.loadConfig(FroggerScene.buildInitialScene());
+    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Right, {x = 384.0f32, y = 832.0f32}, config);
     Assert.assertEq(expected = 448.0f32, result#x);
     Assert.assertEq(expected = 832.0f32, result#y)
 
 @Test
-def testComputeNewTargetClampTop(): Unit \ Assert =
-    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Up, {x = 384.0f32, y = 0.0f32});
+def testComputeNewTargetClampTop(): Unit \ {Assert, Fs.FileRead} =
+    let config = FroggerPlayer.loadConfig(FroggerScene.buildInitialScene());
+    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Up, {x = 384.0f32, y = 0.0f32}, config);
     Assert.assertEq(expected = 0.0f32, result#y)
 
 @Test
-def testComputeNewTargetClampBottom(): Unit \ Assert =
-    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Down, {x = 384.0f32, y = 832.0f32});
+def testComputeNewTargetClampBottom(): Unit \ {Assert, Fs.FileRead} =
+    let config = FroggerPlayer.loadConfig(FroggerScene.buildInitialScene());
+    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Down, {x = 384.0f32, y = 832.0f32}, config);
     Assert.assertEq(expected = 832.0f32, result#y)
 
 @Test
-def testComputeNewTargetClampLeft(): Unit \ Assert =
-    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Left, {x = 0.0f32, y = 384.0f32});
+def testComputeNewTargetClampLeft(): Unit \ {Assert, Fs.FileRead} =
+    let config = FroggerPlayer.loadConfig(FroggerScene.buildInitialScene());
+    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Left, {x = 0.0f32, y = 384.0f32}, config);
     Assert.assertEq(expected = 0.0f32, result#x)
 
 @Test
-def testComputeNewTargetClampRight(): Unit \ Assert =
-    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Right, {x = 720.0f32, y = 384.0f32});
+def testComputeNewTargetClampRight(): Unit \ {Assert, Fs.FileRead} =
+    let config = FroggerPlayer.loadConfig(FroggerScene.buildInitialScene());
+    let result = FroggerPlayer.computeNewTarget(SceneTree.Direction.Right, {x = 720.0f32, y = 384.0f32}, config);
     Assert.assertEq(expected = 720.0f32, result#x)
 
 // ========================================================================
@@ -128,7 +136,7 @@ def testComputeNewTargetClampRight(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testStepFrameLerpIntermediate(): Unit \ Assert =
+def testStepFrameLerpIntermediate(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     let scene = SceneTree.node2D("Root", Vec2D.zero(), player :: Nil);
     // Move target up by one cell (64px) via applyInput
@@ -144,7 +152,7 @@ def testStepFrameLerpIntermediate(): Unit \ Assert =
     }
 
 @Test
-def testStepFrameArrival(): Unit \ Assert =
+def testStepFrameArrival(): Unit \ {Assert, Fs.FileRead} =
     let player = FroggerPlayer.buildPlayer();
     let scene = SceneTree.node2D("Root", Vec2D.zero(), player :: Nil);
     // Move target up by one cell (64px) via applyInput
@@ -164,7 +172,7 @@ def testStepFrameArrival(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testInitialSceneContainsPlayer(): Unit \ Assert =
+def testInitialSceneContainsPlayer(): Unit \ {Assert, Fs.FileRead} =
     let scene = FroggerScene.buildInitialScene();
     match SceneTree.findNode("Player", scene) {
         case Some(player) => Assert.assertEq(expected = "Player", SceneTree.nodeName(player))

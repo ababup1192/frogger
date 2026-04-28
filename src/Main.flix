@@ -8,6 +8,7 @@ def main(): Unit \ IO =
         discard run {
             Game.startGame()
         } with LwjglLayer.withLwjgl(config)
-          with Math.Random.runWithIO;
+          with Math.Random.runWithIO
+          with Fs.FileRead.runWithIO;
         println("Game ended.")
     }

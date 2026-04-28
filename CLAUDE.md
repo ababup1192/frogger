@@ -16,24 +16,25 @@ devbox run -- java -jar bin/flix.jar build
 
 **注意**: `devbox run flix test` は対話REPLに入ってしまうので使わないこと
 
+## 変更後の確認
+
+コード変更後は `/verify` スキルを実行すること。
+セッション終了時、所感があれば `/dev-log` で記録できる。
+
+## スキル参照ガイド
+
+| タイミング | スキル |
+|---|---|
+| Flix コードを新規作成・修正する前 | `/flix-docs` |
+| Scene / Game / Node を触る前 | `/engine-guide` |
+| 新しい Scene を追加するとき | `/new-scene` |
+| コンパイルエラーが解決しないとき | `/compile-fix` |
+| 外部 JAR を追加するとき | `/add-jar` |
+| コードレビューするとき | `/review-checklist` |
+| テストを設計するとき | `/test-strategy` |
+
 ## Flix バージョン更新
 
 ```bash
 curl -L -o bin/flix.jar https://github.com/flix/flix/releases/download/vX.XX.X/flix.jar
 ```
-
-## 変更後の確認
-
-コード変更後は `/verify` スキルを実行すること。
-
-## Flix コーディングルール
-
-**重要**: Flix コードを書く前に `/flix-docs` スキルを実行し、公式ドキュメントとプロジェクト固有のルールを確認すること。
-
-## 外部 JAR の利用
-
-外部 JAR を追加する場合は `/add-jar` スキルを参照すること。
-
-## ゲームエンジン開発のお作法
-
-ゲームエンジン関連のコード（Scene, Game, Node）を触る場合は `/engine-guide` スキルを参照すること。

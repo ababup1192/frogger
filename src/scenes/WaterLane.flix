@@ -134,7 +134,8 @@ mod WaterLane {
     pub def findOverlappingLogVelocity(scene: SceneTree.Node): Option[Vec2D.Vec2] =
         SceneTree.globalPosition(FroggerPlayer.playerName(), scene)
             |> Option.flatMap(playerPos ->
-                findFirstOverlapping(FroggerPlayer.playerCenter(playerPos), laneConfigs(), scene))
+                let config = FroggerPlayer.loadConfig(scene);
+                findFirstOverlapping(FroggerPlayer.playerCenter(playerPos, config), laneConfigs(), scene))
 
     def findFirstOverlapping(center: Vec2D.Vec2,
                              configs: List[LogLaneConfig], scene: SceneTree.Node): Option[Vec2D.Vec2] =

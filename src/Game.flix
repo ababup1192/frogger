@@ -116,7 +116,7 @@ mod Game {
 
     pub def initialTimeRemaining(): Float32 = 30.0f32
 
-    pub def initGame(): GameState =
+    pub def initGame(): GameState \ Fs.FileRead =
         let scene = FroggerScene.buildInitialScene();
         {scene = scene, gameOver = false, prevKeys = Set.empty(), lives = 3,
          homeSlotsFilled = Set.empty(), won = false, timeRemaining = initialTimeRemaining()}
@@ -125,7 +125,7 @@ mod Game {
     // Game Loop
     // ========================================================================
 
-    pub def updateGame(state: GameState): GameState \ Engine.Game =
+    pub def updateGame(state: GameState): GameState \ {Engine.Game, Fs.FileRead} =
         let dt = Engine.Game.getDeltaTime();
         let currKeys = collectPressedKeys();
         if (state#gameOver or state#won) {
@@ -171,12 +171,12 @@ mod Game {
             {scene = finalScene | timerState}
         }
 
-    pub def startGame(): GameState \ Engine.Game =
+    pub def startGame(): GameState \ {Engine.Game, Fs.FileRead} =
         let state = initGame();
         runLoop(state)
 
     @Tailrec
-    def runLoop(state: GameState): GameState \ Engine.Game =
+    def runLoop(state: GameState): GameState \ {Engine.Game, Fs.FileRead} =
         if (Engine.Game.shouldClose() or Engine.Game.isKeyPressed(Engine.Key.Escape)) state
         else {
             let newState = updateGame(state);

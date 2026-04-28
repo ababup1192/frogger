@@ -60,6 +60,15 @@ mod FroggerScene {
     def startZoneH(): Float32     = 64.0f32
 
     // ========================================================================
+    // Player Movement Bounds
+    // ========================================================================
+
+    /// プレイヤーが移動できるグリッド座標の範囲（min, max）
+    pub def playerBounds(): (Vec2D.Vec2, Vec2D.Vec2) =
+        ({x = 0.0f32, y = homeZoneY()},
+         {x = screenW() - tileSize(), y = startZoneY()})
+
+    // ========================================================================
     // Zone Colors
     // ========================================================================
 
@@ -96,7 +105,7 @@ mod FroggerScene {
     // Scene Construction
     // ========================================================================
 
-    pub def buildInitialScene(): SceneTree.Node =
+    pub def buildInitialScene(): SceneTree.Node \ Fs.FileRead =
         let deathTimer = Timer2D.init({name = deathTimerName(), waitTime = deathTimerWait(), oneShot = true});
         (buildBoard() ::: HomeSlot.buildHomeSlots() :: WaterLane.buildWaterLanes() :: TurtleLane.buildTurtleLanes() :: VehicleLane.buildVehicleLanes() :: FroggerPlayer.buildPlayer() :: deathTimer :: FroggerHUD.buildHUD() :: Nil)
             |> SceneTree.node2D(rootName(), Vec2D.zero())

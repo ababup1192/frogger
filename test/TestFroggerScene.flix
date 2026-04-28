@@ -16,7 +16,7 @@ def testBoardZonePositions(): Unit \ Assert =
     Assert.assertEq(expected = 0.0f32 :: 64.0f32 :: 448.0f32 :: 512.0f32 :: 832.0f32 :: Nil, ys)
 
 @Test
-def testInitialSceneHasPlayerWithTargetPos(): Unit \ Assert =
+def testInitialSceneHasPlayerWithTargetPos(): Unit \ {Assert, Fs.FileRead} =
     let scene = FroggerScene.buildInitialScene();
     match SceneTree.findNode("Player", scene) {
         case Some(player) => match SceneTree.characterBodyData(player) {
@@ -30,7 +30,7 @@ def testInitialSceneHasPlayerWithTargetPos(): Unit \ Assert =
 
 // 初期シーンに HUD (CanvasLayer) が含まれること
 @Test
-def testInitialSceneContainsHUD(): Unit \ Assert =
+def testInitialSceneContainsHUD(): Unit \ {Assert, Fs.FileRead} =
     let scene = FroggerScene.buildInitialScene();
     match SceneTree.findNode("HUD", scene) {
         case Some(hud) => match SceneTree.nodeKind(hud) {

@@ -5,7 +5,7 @@
 // ========================================================================
 
 @Test
-def testCollisionDetectedWhenHitboxOverlapsVehicle(): Unit \ Assert =
+def testCollisionDetectedWhenHitboxOverlapsVehicle(): Unit \ {Assert, Fs.FileRead} =
     // プレイヤーを V0_0 (初期位置 x=784, レーンY=512) 付近に移動して
     // stepAndCollide で areaEntered が発火することを確認
     let scene = FroggerScene.buildInitialScene()
@@ -25,7 +25,7 @@ def testCollisionDetectedWhenHitboxOverlapsVehicle(): Unit \ Assert =
     Assert.assertTrue(hit)
 
 @Test
-def testNoCollisionAtStartPos(): Unit \ Assert =
+def testNoCollisionAtStartPos(): Unit \ {Assert, Fs.FileRead} =
     // スタート地点ではどの車両とも重ならない
     let scene = FroggerScene.buildInitialScene();
     let hitboxName = SceneTree.childName(FroggerPlayer.Child.Hitbox);
@@ -45,11 +45,11 @@ def testNoCollisionAtStartPos(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testNotDeadInitially(): Unit \ Assert =
+def testNotDeadInitially(): Unit \ {Assert, Fs.FileRead} =
     Assert.assertFalse(FroggerScene.isPlayerDead(FroggerScene.buildInitialScene()))
 
 @Test
-def testDeadAfterTimerStart(): Unit \ Assert =
+def testDeadAfterTimerStart(): Unit \ {Assert, Fs.FileRead} =
     let scene = FroggerScene.buildInitialScene()
         |> SceneTree.startTimer(FroggerScene.deathTimerName());
     Assert.assertTrue(FroggerScene.isPlayerDead(scene))
@@ -59,7 +59,7 @@ def testDeadAfterTimerStart(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testShowDeathSpriteChangesAnimation(): Unit \ Assert =
+def testShowDeathSpriteChangesAnimation(): Unit \ {Assert, Fs.FileRead} =
     // 死亡時は AnimatedSprite の currentAnimation が "dead" に変わる
     let deathScene = FroggerScene.buildInitialScene() |> FroggerPlayer.showDeathSprite;
     match SceneTree.findNodeIn(FroggerPlayer.playerName(), SceneTree.childName(FroggerPlayer.Child.Sprite), deathScene) {
@@ -76,20 +76,22 @@ def testShowDeathSpriteChangesAnimation(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testRespawnResetsPosition(): Unit \ Assert =
-    let moved = FroggerScene.buildInitialScene()
+def testRespawnResetsPosition(): Unit \ {Assert, Fs.FileRead} =
+    let scene = FroggerScene.buildInitialScene();
+    let sp = FroggerPlayer.startPos();
+    let moved = scene
         |> SceneTree.setNodePosition(FroggerPlayer.playerName(), {x = 200.0f32, y = 500.0f32})
         |> SceneTree.updateCharacterBody(FroggerPlayer.playerName(),
             cbd -> {targetPos = {x = 200.0f32, y = 500.0f32} | cbd});
     match SceneTree.globalPosition(FroggerPlayer.playerName(), FroggerPlayer.respawn(moved)) {
         case Some(pos) =>
-            Assert.assertEq(expected = FroggerPlayer.startPos()#x, pos#x);
-            Assert.assertEq(expected = FroggerPlayer.startPos()#y, pos#y)
+            Assert.assertEq(expected = sp#x, pos#x);
+            Assert.assertEq(expected = sp#y, pos#y)
         case None => Assert.assertTrue(false)
     }
 
 @Test
-def testRespawnRestoresIdleAnimation(): Unit \ Assert =
+def testRespawnRestoresIdleAnimation(): Unit \ {Assert, Fs.FileRead} =
     // リスポーン後は AnimatedSprite の currentAnimation が "idle" に戻る
     let respawned = FroggerScene.buildInitialScene()
         |> FroggerPlayer.showDeathSprite
@@ -108,7 +110,7 @@ def testRespawnRestoresIdleAnimation(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testDeathTimerFiresAfterWait(): Unit \ Assert =
+def testDeathTimerFiresAfterWait(): Unit \ {Assert, Fs.FileRead} =
     let scene = FroggerScene.buildInitialScene()
         |> SceneTree.startTimer(FroggerScene.deathTimerName());
     let fired = run {
@@ -120,7 +122,7 @@ def testDeathTimerFiresAfterWait(): Unit \ Assert =
     Assert.assertTrue(fired)
 
 @Test
-def testDeathTimerNotFiredEarly(): Unit \ Assert =
+def testDeathTimerNotFiredEarly(): Unit \ {Assert, Fs.FileRead} =
     let scene = FroggerScene.buildInitialScene()
         |> SceneTree.startTimer(FroggerScene.deathTimerName());
     let fired = run {
@@ -132,7 +134,7 @@ def testDeathTimerNotFiredEarly(): Unit \ Assert =
     Assert.assertFalse(fired)
 
 @Test
-def testDeathTimerStopsAfterFiring(): Unit \ Assert =
+def testDeathTimerStopsAfterFiring(): Unit \ {Assert, Fs.FileRead} =
     let scene = FroggerScene.buildInitialScene()
         |> SceneTree.startTimer(FroggerScene.deathTimerName());
     let result = SceneTree.runWithNoopTimeout(() ->

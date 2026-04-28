@@ -489,6 +489,15 @@ mod SceneTree {
             case _ => None
         }
 
+    pub def animatedSpriteData(node: Node): Option[AnimatedSpriteData] =
+        match nodeKind(node) {
+            case NodeKind.AnimatedSprite(asd) => Some(asd)
+            case _ => None
+        }
+
+    pub def findAnimatedSpriteData(name: String, root: Node): Option[AnimatedSpriteData] =
+        findNode(name, root) |> Option.flatMap(animatedSpriteData)
+
     pub def findRectShape(children: List[Node]): Option[Vec2D.Vec2] =
         List.findMap(child -> match nodeKind(child) {
             case NodeKind.Shape(CollisionShapeData.RectShape(size)) => Some(size)
