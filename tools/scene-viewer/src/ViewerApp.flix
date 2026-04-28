@@ -32,7 +32,7 @@ mod ViewerApp {
     def collectPressedKeys(): Set[Engine.Key] \ Engine.Game =
         let keys = Engine.Key.Tab :: Engine.Key.R :: Engine.Key.Home :: Engine.Key.D ::
                    Engine.Key.Up :: Engine.Key.Down :: Engine.Key.Left :: Engine.Key.Right ::
-                   Engine.Key.PageUp :: Engine.Key.PageDown ::
+                   Engine.Key.W :: Engine.Key.S ::
                    Engine.Key.LeftShift :: Engine.Key.RightShift :: Nil;
         List.foldLeft((acc, key) ->
             if (Engine.Game.isKeyPressed(key)) Set.insert(key, acc) else acc,
@@ -80,12 +80,12 @@ mod ViewerApp {
                 {canvasState = {panOffset = newPan | afterSwitch#canvasState} |> CanvasPanel.clampPan | afterSwitch}
             else afterSwitch
         };
-        // ズーム操作（PageUp / PageDown）
+        // ズーム操作（W / S）
         let afterZoom =
-            if (Set.memberOf(Engine.Key.PageUp, jp)) {
+            if (Set.memberOf(Engine.Key.W, jp)) {
                 let newZoom = Float32.min(4.0f32, afterPan#canvasState#zoom + 0.25f32);
                 {canvasState = {zoom = newZoom | afterPan#canvasState} | afterPan}
-            } else if (Set.memberOf(Engine.Key.PageDown, jp)) {
+            } else if (Set.memberOf(Engine.Key.S, jp)) {
                 let newZoom = Float32.max(0.25f32, afterPan#canvasState#zoom - 0.25f32);
                 {canvasState = {zoom = newZoom | afterPan#canvasState} | afterPan}
             } else if (Set.memberOf(Engine.Key.Home, jp)) {
@@ -172,7 +172,7 @@ mod ViewerApp {
                 let textColor = if (isActive) {r = 1.0f32, g = 1.0f32, b = 1.0f32}
                                 else {r = 0.6f32, g = 0.6f32, b = 0.6f32};
                 let tabLabel = Label2D.init({name = "tab_lbl_${index}",
-                                            pos = {x = tabX + 8.0f32, y = 14.0f32},
+                                            pos = {x = tabX + 8.0f32, y = 18.0f32},
                                             text = fileName, fontSize = 18.0f32,
                                             font = ViewerConfig.defaultFont()})
                                    |> Label2D.color(textColor);

@@ -136,15 +136,7 @@ mod CanvasPanel {
                 Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
                                size = {x = scaledW, y = scaledH}, texture = texture})
                     |> Sprite2D.color(asd#color) :: Nil
-            // その他のノードは小さい半透明マーカーで表示
-            case _ =>
-                let visual = NodeVisual.visualForKind(kind);
-                let scaledW = visual#size#x * zoom;
-                let scaledH = visual#size#y * zoom;
-                if (scaledW > 1.0f32 and scaledH > 1.0f32)
-                    Sprite2D.init({name = "cv_${name}", pos = {x = globalX, y = globalY},
-                                   size = {x = scaledW, y = scaledH}, texture = "white"})
-                        |> Sprite2D.color({r = visual#color#r, g = visual#color#g, b = visual#color#b}) :: Nil
-                else Nil
+            // その他のノード（CharacterBody, Area 等）はテクスチャモードでは非表示
+            case _ => Nil
         }
 }
