@@ -139,7 +139,7 @@ mod Game {
                 let justPressed = justPressedKeys(currKeys, state#prevKeys);
                 inputDirection(justPressed)
             };
-            let newSS = FroggerScene.stepScene(dt, dir, ss);
+            let newSS = FroggerScene.stepFrame(dt, dir, ss);
             {sceneState = newSS, prevKeys = currKeys}
         }
 

@@ -54,14 +54,13 @@ mod FroggerHUD {
     // Update Functions
     // ========================================================================
 
-    pub def updateLives(lives: Int32, scene: SceneTree.Node): SceneTree.Node =
-        SceneTree.updateLabelIn(containerName(), livesLabelName(),
-            ld -> {text = "LIVES: ${lives}" | ld}, scene)
-
-    pub def updateTimer(timeRemaining: Float32, scene: SceneTree.Node): SceneTree.Node =
-        let seconds = Float32.max(0.0f32, timeRemaining) |> Vec2D.floatToInt32;
-        SceneTree.updateLabelIn(containerName(), timerLabelName(),
-            ld -> {text = "TIME: ${seconds}" | ld}, scene)
+    pub def update(state: {lives = Int32, timeRemaining = Float32, scene = SceneTree.Node | _r}): SceneTree.Node =
+        let seconds = Float32.max(0.0f32, state#timeRemaining) |> Vec2D.floatToInt32;
+        state#scene
+            |> SceneTree.updateLabelIn(containerName(), livesLabelName(),
+                ld -> {text = "LIVES: ${state#lives}" | ld})
+            |> SceneTree.updateLabelIn(containerName(), timerLabelName(),
+                ld -> {text = "TIME: ${seconds}" | ld})
 
     pub def showMessage(text: String, scene: SceneTree.Node): SceneTree.Node =
         SceneTree.updateLabelIn(containerName(), messageLabelName(),

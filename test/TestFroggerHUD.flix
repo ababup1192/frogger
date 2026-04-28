@@ -92,11 +92,11 @@ def testRestartLabelInitiallyHidden(): Unit \ Assert =
 // Update Tests
 // ========================================================================
 
-// updateLives でライフ数のテキストが更新されること
+// update でライフ数のテキストが更新されること
 @Test
 def testUpdateLivesChangesText(): Unit \ Assert =
     let scene = SceneTree.node2D("Root", Vec2D.zero(), FroggerHUD.buildHUD() :: Nil);
-    let updated = FroggerHUD.updateLives(2, scene);
+    let updated = FroggerHUD.update({lives = 2, timeRemaining = 30.0f32, scene = scene});
     match SceneTree.findNode("LivesLabel", updated) {
         case Some(node) => match SceneTree.nodeKind(node) {
             case SceneTree.NodeKind.Label(ld) =>
@@ -106,11 +106,11 @@ def testUpdateLivesChangesText(): Unit \ Assert =
         case None => bug!("LivesLabel not found")
     }
 
-// updateTimer でタイマーテキストが更新されること（小数点以下は切り捨て）
+// update でタイマーテキストが更新されること（小数点以下は切り捨て）
 @Test
 def testUpdateTimerChangesText(): Unit \ Assert =
     let scene = SceneTree.node2D("Root", Vec2D.zero(), FroggerHUD.buildHUD() :: Nil);
-    let updated = FroggerHUD.updateTimer(15.7f32, scene);
+    let updated = FroggerHUD.update({lives = 3, timeRemaining = 15.7f32, scene = scene});
     match SceneTree.findNode("TimerLabel", updated) {
         case Some(node) => match SceneTree.nodeKind(node) {
             case SceneTree.NodeKind.Label(ld) =>

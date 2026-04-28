@@ -30,9 +30,9 @@ mod ViewerApp {
 
     /// 監視対象のキーを収集する
     def collectPressedKeys(): Set[Engine.Key] \ Engine.Game =
-        let keys = Engine.Key.Tab :: Engine.Key.R :: Engine.Key.Home :: Engine.Key.D ::
+        let keys = Engine.Key.Tab :: Engine.Key.R :: Engine.Key.F :: Engine.Key.D ::
                    Engine.Key.Up :: Engine.Key.Down :: Engine.Key.Left :: Engine.Key.Right ::
-                   Engine.Key.W :: Engine.Key.S ::
+                   Engine.Key.Equal :: Engine.Key.Minus ::
                    Engine.Key.LeftShift :: Engine.Key.RightShift :: Nil;
         List.foldLeft((acc, key) ->
             if (Engine.Game.isKeyPressed(key)) Set.insert(key, acc) else acc,
@@ -80,15 +80,15 @@ mod ViewerApp {
                 {canvasState = {panOffset = newPan | afterSwitch#canvasState} |> CanvasPanel.clampPan | afterSwitch}
             else afterSwitch
         };
-        // ズーム操作（W / S）
+        // ズーム操作（+: ズームイン / -: ズームアウト）— キャンバス中心を基準にズーム
         let afterZoom =
-            if (Set.memberOf(Engine.Key.W, jp)) {
+            if (Set.memberOf(Engine.Key.Equal, jp)) {
                 let newZoom = Float32.min(4.0f32, afterPan#canvasState#zoom + 0.25f32);
-                {canvasState = {zoom = newZoom | afterPan#canvasState} | afterPan}
-            } else if (Set.memberOf(Engine.Key.S, jp)) {
+                {canvasState = CanvasPanel.zoomAtCenter(newZoom, afterPan#canvasState) | afterPan}
+            } else if (Set.memberOf(Engine.Key.Minus, jp)) {
                 let newZoom = Float32.max(0.25f32, afterPan#canvasState#zoom - 0.25f32);
-                {canvasState = {zoom = newZoom | afterPan#canvasState} | afterPan}
-            } else if (Set.memberOf(Engine.Key.Home, jp)) {
+                {canvasState = CanvasPanel.zoomAtCenter(newZoom, afterPan#canvasState) | afterPan}
+            } else if (Set.memberOf(Engine.Key.F, jp)) {
                 {canvasState = CanvasPanel.initialView(afterPan#loadedScene) | afterPan}
             } else afterPan;
         // デバッグ表示トグル（D キー）
@@ -106,11 +106,12 @@ mod ViewerApp {
                             let newTreeState = afterDebug#treeState
                                 |> TreePanel.toggleExpand(nodeName);
                             {treeState = {selectedNode = Some(nodeName) | newTreeState} | afterDebug}
-                        case None => afterDebug
+                        case None =>
+                        {treeState = {selectedNode = None | afterDebug#treeState} | afterDebug}
                     }
                 } else if (mouseY > ViewerConfig.tabBarHeight()) {
-                    // キャンバスパネルのクリック
-                    afterDebug
+                    // キャンバスパネルのクリック — 選択解除
+                    {treeState = {selectedNode = None | afterDebug#treeState} | afterDebug}
                 } else {
                     // タブバーのクリック — ファイル選択
                     handleTabClick(mouseX, afterDebug)
@@ -132,11 +133,15 @@ mod ViewerApp {
     // シーン構築
     // ========================================================================
 
+    /// ヘルプバーの高さ（ピクセル）
+    def helpBarHeight(): Float32 = 28.0f32
+
     /// ビューワー UI 全体を SceneTree.Node として構築する
     def buildViewerScene(state: ViewerState.State): SceneTree.Node =
         let tabBar = buildTabBar(state);
         let treePanel = TreePanel.build(state#loadedScene, state#treeState);
         let canvasPanel = CanvasPanel.build(state#loadedScene, state#canvasState, state#treeState#selectedNode, state#debugView);
+        let helpBar = buildHelpBar(state);
         // パネル境界線
         let divider = Sprite2D.init({name = "divider",
                                      pos = {x = ViewerConfig.treePanelWidth() - 1.0f32,
@@ -146,7 +151,7 @@ mod ViewerApp {
                                      texture = "white"})
                           |> Sprite2D.color({r = 0.3f32, g = 0.3f32, b = 0.35f32});
         SceneTree.node2D("ViewerRoot", Vec2D.zero(),
-            tabBar :: treePanel :: canvasPanel :: divider :: Nil)
+            tabBar :: treePanel :: canvasPanel :: divider :: helpBar :: Nil)
 
     /// ファイルタブバーを構築する
     def buildTabBar(state: ViewerState.State): SceneTree.Node =
@@ -179,6 +184,28 @@ mod ViewerApp {
                 SceneTree.node2D("tab_${index}", Vec2D.zero(), tabBgSprite :: tabLabel :: Nil)
             });
         SceneTree.node2D("TabBar", Vec2D.zero(), tabBg :: tabs)
+
+    /// 画面下部にキー操作ヒントとズーム倍率を表示するバーを構築する
+    def buildHelpBar(state: ViewerState.State): SceneTree.Node =
+        let screenH = Int32.toFloat32(ViewerConfig.screenHeight());
+        let screenW = Int32.toFloat32(ViewerConfig.screenWidth());
+        let barY = screenH - helpBarHeight();
+        // 背景
+        let bg = Sprite2D.init({name = "helpBarBg",
+                                pos = {x = 0.0f32, y = barY},
+                                size = {x = screenW, y = helpBarHeight()},
+                                texture = "white"})
+                    |> Sprite2D.color({r = 0.08f32, g = 0.08f32, b = 0.1f32});
+        // キーヒントテキスト
+        let zoomPct = Vec2D.floatToInt32(state#canvasState#zoom * 100.0f32);
+        let modeText = if (state#debugView) "Debug" else "Texture";
+        let helpText = "Tab: File Switch | Arrows: Pan | +/-: Zoom | F: Fit | D: ${modeText} | R: Reload | Zoom: ${zoomPct}%";
+        let label = Label2D.init({name = "helpBarLabel",
+                                  pos = {x = 8.0f32, y = barY + 8.0f32},
+                                  text = helpText, fontSize = 14.0f32,
+                                  font = ViewerConfig.defaultFont()})
+                       |> Label2D.color({r = 0.6f32, g = 0.6f32, b = 0.65f32});
+        SceneTree.node2D("HelpBar", Vec2D.zero(), bg :: label :: Nil)
 
     /// ファイルパスからファイル名だけを抽出する
     def extractFileName(path: String): String =

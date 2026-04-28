@@ -47,6 +47,17 @@ mod CanvasPanel {
             {panOffset = {x = panX, y = panY}, zoom = zoom}
         }
 
+    /// キャンバス中心を基準にズーム倍率を変更する（中心点が動かないようにパンを調整）
+    pub def zoomAtCenter(newZoom: Float32, canvasState: ViewerState.CanvasState): ViewerState.CanvasState =
+        let oldZoom = canvasState#zoom;
+        let halfW = panelWidth() / 2.0f32;
+        let halfH = panelHeight() / 2.0f32;
+        let oldPanX = canvasState#panOffset#x;
+        let oldPanY = canvasState#panOffset#y;
+        let newPanX = halfW - (halfW - oldPanX) * newZoom / oldZoom;
+        let newPanY = halfH - (halfH - oldPanY) * newZoom / oldZoom;
+        {panOffset = {x = newPanX, y = newPanY}, zoom = newZoom}
+
     /// パンオフセットをクランプして画面外に出ないようにする
     pub def clampPan(canvasState: ViewerState.CanvasState): ViewerState.CanvasState =
         let limit = 2000.0f32;

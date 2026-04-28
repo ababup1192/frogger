@@ -112,6 +112,11 @@ mod Engine {
         case End
         case PageUp
         case PageDown
+
+        case Minus
+        case Equal
+        case Comma
+        case Period
     }
 
     pub eff Game {

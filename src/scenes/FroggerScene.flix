@@ -1,4 +1,4 @@
-// FroggerScene — root scene for Frogger
+// FroggerScene — Frogger のルートシーン
 
 mod FroggerScene {
     pub def rootName(): String = "Root"
@@ -31,7 +31,7 @@ mod FroggerScene {
     def deathTimerWait(): Float32 = 2.0f32
 
     // ========================================================================
-    // SceneState — FroggerScene が管理するシーン状態
+    // シーン状態
     // ========================================================================
 
     pub type alias SceneState = {
@@ -47,7 +47,7 @@ mod FroggerScene {
     }
 
     // ========================================================================
-    // Game End Conditions
+    // ゲーム終了条件
     // ========================================================================
 
     pub def isWon(state: SceneState): Bool =
@@ -57,7 +57,7 @@ mod FroggerScene {
         state#lives <= 0 and not isPlayerDead(state#scene)
 
     // ========================================================================
-    // Physics Config
+    // 物理設定
     // ========================================================================
 
     pub def physicsConfig(): SceneTree.PhysicsConfig =
@@ -65,7 +65,7 @@ mod FroggerScene {
                        y = Int32.toFloat32(Game.screenHeight())}}
 
     // ========================================================================
-    // Board Layout Constants
+    // ボードレイアウト定数
     // ========================================================================
 
     def screenW(): Float32 = Int32.toFloat32(Game.screenWidth())
@@ -86,7 +86,7 @@ mod FroggerScene {
     def startZoneH(): Float32     = 64.0f32
 
     // ========================================================================
-    // Player Movement Bounds
+    // プレイヤー移動範囲
     // ========================================================================
 
     /// プレイヤーが移動できるグリッド座標の範囲（min, max）
@@ -95,20 +95,20 @@ mod FroggerScene {
          {x = screenW() - tileSize(), y = startZoneY()})
 
     // ========================================================================
-    // Zone Colors
+    // ゾーン色
     // ========================================================================
 
     def greenColor(): Engine.Color  = {r = 0.2f32, g = 0.5f32, b = 0.2f32}
 
     // ========================================================================
-    // Helpers
+    // ヘルパー
     // ========================================================================
 
     def coloredRect(name: String, y: Float32, h: Float32, col: Engine.Color): SceneTree.Node =
         Sprite2D.init({name = name, pos = {x = 0.0f32, y = y}, size = {x = screenW(), y = h}, texture = "white"})
             |> Sprite2D.color(col)
 
-    // 16x16 texture at 4x scale = 64px tile
+    // 16x16 テクスチャを 4 倍スケール = 64px タイル
     def tileSize(): Float32 = 64.0f32
 
     def tiledRect(name: String, y: Float32, h: Float32, texture: String): SceneTree.Node =
@@ -116,7 +116,7 @@ mod FroggerScene {
             |> Sprite2D.uv(Vec2D.zero(), {x = screenW() / tileSize(), y = h / tileSize()})
 
     // ========================================================================
-    // Board Builder
+    // ボード構築
     // ========================================================================
 
     pub def buildBoard(): List[SceneTree.Node] =
@@ -128,7 +128,7 @@ mod FroggerScene {
         Nil
 
     // ========================================================================
-    // Scene Construction
+    // シーン構築
     // ========================================================================
 
     pub def buildInitialScene(): SceneTree.Node \ Fs.FileRead =
@@ -137,21 +137,14 @@ mod FroggerScene {
             |> SceneTree.node2D(rootName(), Vec2D.zero())
 
     // ========================================================================
-    // Input Application — delegate to FroggerPlayer
-    // ========================================================================
-
-    pub def applyInput(dir: SceneTree.Direction, scene: SceneTree.Node): SceneTree.Node =
-        FroggerPlayer.applyInput(dir, scene)
-
-    // ========================================================================
-    // Death State — derived from DeathTimer running state
+    // 死亡状態 — DeathTimer の稼働状態から導出
     // ========================================================================
 
     pub def isPlayerDead(scene: SceneTree.Node): Bool =
         SceneTree.isTimerRunning(SceneTree.childName(Child.DeathTimer), scene)
 
     // ========================================================================
-    // Death Trigger — shared helper for vehicle collision and drowning
+    // 死亡トリガー — 車両衝突・溺死の共通ヘルパー
     // ========================================================================
 
     pub def triggerDeath(state: SceneState): SceneState =
@@ -161,7 +154,7 @@ mod FroggerScene {
          lives = state#lives - 1 | state}
 
     // ========================================================================
-    // Wrap All Lanes — vehicle, log, turtle wrapping in one pass
+    // 全レーン折り返し — 車両・丸太・亀を一括ラップ
     // ========================================================================
 
     def wrapAllLanes(scene: SceneTree.Node): SceneTree.Node =
@@ -171,10 +164,10 @@ mod FroggerScene {
             |> TurtleLane.wrapTurtles
 
     // ========================================================================
-    // Water Zone Step — platform riding (log + turtle) + drown check
+    // 水域プラットフォーム処理 — 乗り移動（丸太＋亀）＋溺死判定
     // ========================================================================
 
-    def stepWaterZone(dt: Float32, scene: SceneTree.Node):
+    def stepWaterPlatforms(dt: Float32, scene: SceneTree.Node):
             {scene = SceneTree.Node, atTarget = Bool, shouldDrown = Bool} =
         let ridingScene = scene
             |> WaterLane.applyPlatformRiding(dt)
@@ -186,7 +179,7 @@ mod FroggerScene {
          shouldDrown = WaterLane.shouldDrown(atTarget, onPlatform, ridingScene)}
 
     // ========================================================================
-    // Home Slot Check — player reached home zone
+    // ホームスロット判定 — プレイヤーがホームゾーンに到達
     // ========================================================================
 
     def checkHomeSlot(atTarget: Bool, playerPos: Option[Vec2D.Vec2],
@@ -205,7 +198,7 @@ mod FroggerScene {
         }
 
     // ========================================================================
-    // Frame Step (Dead) — physics + wrap + death timer timeout
+    // フレーム更新（死亡中）— 物理演算 + ラップ + 死亡タイマー
     // ========================================================================
 
     def stepFrameDead(dt: Float32, state: SceneState): SceneState =
@@ -234,7 +227,7 @@ mod FroggerScene {
         }
 
     // ========================================================================
-    // Frame Step (Alive) — player move + physics + collision + water zone
+    // フレーム更新（生存中）— プレイヤー移動 + 物理衝突 + 水域判定
     // ========================================================================
 
     def stepFrameAlive(dt: Float32, state: SceneState): SceneState =
@@ -252,56 +245,45 @@ mod FroggerScene {
                     triggerDeath(st)
                 else st
         };
-        // Water zone: platform riding (log + turtle) + drown check
-        let water = stepWaterZone(dt, collisionState#scene);
+        // 水域: 乗り移動（丸太＋亀）＋溺死判定
+        let water = stepWaterPlatforms(dt, collisionState#scene);
         let playerPos = SceneTree.globalPosition(FroggerPlayer.playerName(), water#scene);
-        if (water#shouldDrown and not isPlayerDead(water#scene))
+        let afterCollisions = if (water#shouldDrown and not isPlayerDead(water#scene))
             triggerDeath({scene = water#scene | collisionState})
         else
-            checkHomeSlot(water#atTarget, playerPos, {scene = water#scene | collisionState})
-
-    // ========================================================================
-    // Frame Step — dispatch to dead / alive path
-    // ========================================================================
-
-    pub def stepFrame(dt: Float32, state: SceneState): SceneState =
-        if (isPlayerDead(state#scene))
-            stepFrameDead(dt, state)
-        else
-            stepFrameAlive(dt, state)
-
-    // ========================================================================
-    // stepScene — 1フレームのシーン更新を統合
-    // ========================================================================
-
-    pub def stepScene(dt: Float32, dir: Option[SceneTree.Direction],
-                      state: SceneState): SceneState =
-        // 1. Input application
-        let inputScene = match dir {
-            case Some(d) => applyInput(d, state#scene)
-            case None    => state#scene
-        };
-        // 2. Physics & collision
-        let physicsState = stepFrame(dt, {scene = inputScene | state});
-        // 3. Timer countdown (skip while dead)
-        let timerState = if (isPlayerDead(physicsState#scene))
-            physicsState
+            checkHomeSlot(water#atTarget, playerPos, {scene = water#scene | collisionState});
+        // 制限時間カウントダウン（死亡中はスキップ）
+        if (isPlayerDead(afterCollisions#scene))
+            afterCollisions
         else {
-            let newTime = physicsState#timeRemaining - dt;
+            let newTime = afterCollisions#timeRemaining - dt;
             if (newTime <= 0.0f32)
-                triggerDeath({timeRemaining = 0.0f32 | physicsState})
+                triggerDeath({timeRemaining = 0.0f32 | afterCollisions})
             else
-                {timeRemaining = newTime | physicsState}
-        };
-        // 4. HUD update
-        let hudScene = timerState#scene
-            |> FroggerHUD.updateLives(timerState#lives)
-            |> FroggerHUD.updateTimer(timerState#timeRemaining);
-        // 5. End-game messages
-        let finalScene = if (isGameOver(timerState))
+                {timeRemaining = newTime | afterCollisions}
+        }
+
+    // ========================================================================
+    // フレーム更新 — 入力 → シミュレーション → 表示
+    // ========================================================================
+
+    pub def stepFrame(dt: Float32, dir: Option[SceneTree.Direction],
+                      state: SceneState): SceneState =
+        let inputState = {scene = match dir {
+            case Some(d) => FroggerPlayer.applyInput(d, state#scene)
+            case None    => state#scene
+        } | state};
+        let simState = if (isPlayerDead(inputState#scene))
+            stepFrameDead(dt, inputState)
+        else
+            stepFrameAlive(dt, inputState);
+        // 3. HUD 更新
+        let hudScene = FroggerHUD.update(simState);
+        // 4. ゲーム終了メッセージ
+        let finalScene = if (isGameOver(simState))
             hudScene |> FroggerHUD.showMessage("You Lost!") |> FroggerHUD.showRestart
-        else if (isWon(timerState))
+        else if (isWon(simState))
             hudScene |> FroggerHUD.showMessage("You Won!") |> FroggerHUD.showRestart
         else hudScene;
-        {scene = finalScene | timerState}
+        {scene = finalScene | simState}
 }
