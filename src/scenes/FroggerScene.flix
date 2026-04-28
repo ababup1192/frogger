@@ -31,6 +31,32 @@ mod FroggerScene {
     def deathTimerWait(): Float32 = 2.0f32
 
     // ========================================================================
+    // SceneState — FroggerScene が管理するシーン状態
+    // ========================================================================
+
+    pub type alias SceneState = {
+        scene         = SceneTree.Node,
+        lives         = Int32,
+        timeRemaining = Float32
+    }
+
+    pub def initSceneState(): SceneState \ Fs.FileRead = {
+        scene = buildInitialScene(),
+        lives = 3,
+        timeRemaining = Game.initialTimeRemaining()
+    }
+
+    // ========================================================================
+    // Game End Conditions
+    // ========================================================================
+
+    pub def isWon(state: SceneState): Bool =
+        HomeSlot.isAllFilled(state#scene)
+
+    pub def isGameOver(state: SceneState): Bool =
+        state#lives <= 0 and not isPlayerDead(state#scene)
+
+    // ========================================================================
     // Physics Config
     // ========================================================================
 
@@ -128,7 +154,7 @@ mod FroggerScene {
     // Death Trigger — shared helper for vehicle collision and drowning
     // ========================================================================
 
-    pub def triggerDeath(state: Game.GameState): Game.GameState =
+    pub def triggerDeath(state: SceneState): SceneState =
         {scene = state#scene
             |> FroggerPlayer.showDeathSprite
             |> SceneTree.startTimer(SceneTree.childName(Child.DeathTimer)),
@@ -139,7 +165,7 @@ mod FroggerScene {
     // ========================================================================
 
     def checkHomeSlot(atTarget: Bool, playerPos: Option[Vec2D.Vec2],
-                      state: Game.GameState): Game.GameState =
+                      state: SceneState): SceneState =
         match playerPos {
             case None => state
             case Some(pos) =>
@@ -160,7 +186,7 @@ mod FroggerScene {
     // Frame Step — physics (stepAndCollide) + OnCollision + OnTimeout
     // ========================================================================
 
-    pub def stepFrame(dt: Float32, state: Game.GameState): Game.GameState =
+    pub def stepFrame(dt: Float32, state: SceneState): SceneState =
         let hitboxName = SceneTree.childName(FroggerPlayer.Child.Hitbox);
         if (isPlayerDead(state#scene)) {
             // Death active: move vehicles/logs via physics, step timer, handle timeout
@@ -222,4 +248,39 @@ mod FroggerScene {
                 // Home slot check — player reached home zone
                 checkHomeSlot(atTarget, playerPos, {scene = ridingScene | collisionState})
         }
+
+    // ========================================================================
+    // stepScene — 1フレームのシーン更新を統合
+    // ========================================================================
+
+    pub def stepScene(dt: Float32, dir: Option[SceneTree.Direction],
+                      state: SceneState): SceneState =
+        // 1. Input application
+        let inputScene = match dir {
+            case Some(d) => applyInput(d, state#scene)
+            case None    => state#scene
+        };
+        // 2. Physics & collision
+        let physicsState = stepFrame(dt, {scene = inputScene | state});
+        // 3. Timer countdown (skip while dead)
+        let timerState = if (isPlayerDead(physicsState#scene))
+            physicsState
+        else {
+            let newTime = physicsState#timeRemaining - dt;
+            if (newTime <= 0.0f32)
+                triggerDeath({timeRemaining = 0.0f32 | physicsState})
+            else
+                {timeRemaining = newTime | physicsState}
+        };
+        // 4. HUD update
+        let hudScene = timerState#scene
+            |> FroggerHUD.updateLives(timerState#lives)
+            |> FroggerHUD.updateTimer(timerState#timeRemaining);
+        // 5. End-game messages
+        let finalScene = if (isGameOver(timerState))
+            hudScene |> FroggerHUD.showMessage("You Lost!") |> FroggerHUD.showRestart
+        else if (isWon(timerState))
+            hudScene |> FroggerHUD.showMessage("You Won!") |> FroggerHUD.showRestart
+        else hudScene;
+        {scene = finalScene | timerState}
 }

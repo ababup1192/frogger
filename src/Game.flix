@@ -2,10 +2,8 @@
 
 mod Game {
     pub type alias GameState = {
-        scene           = SceneTree.Node,
-        prevKeys        = Set[Engine.Key],
-        lives           = Int32,
-        timeRemaining   = Float32
+        sceneState = FroggerScene.SceneState,
+        prevKeys   = Set[Engine.Key]
     }
 
     // ========================================================================
@@ -113,25 +111,20 @@ mod Game {
 
     pub def initialTimeRemaining(): Float32 = 30.0f32
 
-    pub def initGame(): GameState \ Fs.FileRead =
-        let scene = FroggerScene.buildInitialScene();
-        {scene = scene, prevKeys = Set.empty(), lives = 3,
-         timeRemaining = initialTimeRemaining()}
+    pub def initGame(): GameState \ Fs.FileRead = {
+        sceneState = FroggerScene.initSceneState(),
+        prevKeys = Set.empty()
+    }
 
     // ========================================================================
     // Game Loop
     // ========================================================================
 
-    pub def isWon(state: GameState): Bool =
-        HomeSlot.isAllFilled(state#scene)
-
-    pub def isGameOver(state: GameState): Bool =
-        state#lives <= 0 and not FroggerScene.isPlayerDead(state#scene)
-
     pub def updateGame(state: GameState): GameState \ {Engine.Game, Fs.FileRead} =
         let dt = Engine.Game.getDeltaTime();
         let currKeys = collectPressedKeys();
-        if (isGameOver(state) or isWon(state)) {
+        let ss = state#sceneState;
+        if (FroggerScene.isGameOver(ss) or FroggerScene.isWon(ss)) {
             // Game ended — Enter to restart, otherwise just update prevKeys
             let justPressed = justPressedKeys(currKeys, state#prevKeys);
             if (Set.memberOf(Engine.Key.Enter, justPressed))
@@ -140,38 +133,14 @@ mod Game {
                 {prevKeys = currKeys | state}
         } else {
             // Normal play
-            let inputState = if (FroggerScene.isPlayerDead(state#scene))
-                {prevKeys = currKeys | state}
+            let dir = if (FroggerScene.isPlayerDead(ss#scene))
+                None
             else {
                 let justPressed = justPressedKeys(currKeys, state#prevKeys);
-                {scene = match inputDirection(justPressed) {
-                    case Some(dir) => FroggerScene.applyInput(dir, state#scene)
-                    case None      => state#scene
-                }, prevKeys = currKeys | state}
+                inputDirection(justPressed)
             };
-            // Physics & collision
-            let physicsState = FroggerScene.stepFrame(dt, inputState);
-            // Timer countdown (skip while dead)
-            let timerState = if (FroggerScene.isPlayerDead(physicsState#scene))
-                physicsState
-            else {
-                let newTime = physicsState#timeRemaining - dt;
-                if (newTime <= 0.0f32)
-                    FroggerScene.triggerDeath({timeRemaining = 0.0f32 | physicsState})
-                else
-                    {timeRemaining = newTime | physicsState}
-            };
-            // HUD update
-            let hudScene = timerState#scene
-                |> FroggerHUD.updateLives(timerState#lives)
-                |> FroggerHUD.updateTimer(timerState#timeRemaining);
-            // End-game messages
-            let finalScene = if (isGameOver(timerState))
-                hudScene |> FroggerHUD.showMessage("You Lost!") |> FroggerHUD.showRestart
-            else if (isWon(timerState))
-                hudScene |> FroggerHUD.showMessage("You Won!") |> FroggerHUD.showRestart
-            else hudScene;
-            {scene = finalScene | timerState}
+            let newSS = FroggerScene.stepScene(dt, dir, ss);
+            {sceneState = newSS, prevKeys = currKeys}
         }
 
     pub def startGame(): GameState \ {Engine.Game, Fs.FileRead} =
@@ -183,7 +152,7 @@ mod Game {
         if (Engine.Game.shouldClose() or Engine.Game.isKeyPressed(Engine.Key.Escape)) state
         else {
             let newState = updateGame(state);
-            Engine.Game.render(newState#scene);
+            Engine.Game.render(newState#sceneState#scene);
             runLoop(newState)
         }
 
