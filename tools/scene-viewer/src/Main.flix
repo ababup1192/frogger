@@ -11,7 +11,7 @@ def main(): Unit \ IO =
             println("No .scene.json files found in ${scenesDir}")
         else {
             println("Found ${List.length(sceneFiles)} scene file(s)");
-            discard run {
+            run {
                 ViewerApp.start(sceneFiles)
             } with LwjglLayer.withLwjgl(config)
               with Fs.FileRead.runWithIO;
