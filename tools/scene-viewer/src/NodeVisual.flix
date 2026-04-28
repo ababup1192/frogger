@@ -3,10 +3,8 @@
 mod NodeVisual {
     /// ノードの表示情報（色とサイズ）
     pub type alias Visual = {
-        /// 矩形の色
-        color = Engine.Color,
-        /// 矩形のサイズ
-        size = Vec2D.Vec2
+        color = Engine.Color, // 矩形の色
+        size = Vec2D.Vec2     // 矩形のサイズ
     }
 
     /// NodeKind に対応する表示色とデフォルトサイズを返す
@@ -62,7 +60,7 @@ mod NodeVisual {
                 {color = {r = 0.6f32, g = 0.4f32, b = 0.2f32},
                  size = {x = 32.0f32, y = 32.0f32}}
 
-            // Camera2D — 水色 24x24（十字マーク的なサイズ）
+            // Camera2D — 水色 24x24
             case SceneTree.NodeKind.Camera(_) =>
                 {color = {r = 0.4f32, g = 0.7f32, b = 1.0f32},
                  size = {x = 24.0f32, y = 24.0f32}}

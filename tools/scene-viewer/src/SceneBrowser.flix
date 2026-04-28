@@ -7,6 +7,7 @@ mod SceneBrowser {
             case Ok(files) =>
                 files
                     |> List.filter(f -> String.endsWith({suffix = ".scene.json"}, f))
+                    |> List.map(f -> "${dirPath}/${f}")
                     |> List.sort
             case Err(_) => Nil
         }

@@ -3,38 +3,26 @@
 mod ViewerState {
     /// ツリーパネルの表示状態
     pub type alias TreeState = {
-        /// 展開中のノード名セット
-        expandedNodes = Set[String],
-        /// 選択中のノード名
-        selectedNode = Option[String],
-        /// スクロール位置（Y軸）
-        scrollY = Float32
+        expandedNodes = Set[String],    // 展開中のノード名セット
+        selectedNode = Option[String],  // 選択中のノード名
+        scrollY = Float32               // スクロール位置（Y軸）
     }
 
     /// キャンバスパネルの表示状態
     pub type alias CanvasState = {
-        /// パンのオフセット
-        panOffset = Vec2D.Vec2,
-        /// ズーム倍率
-        zoom = Float32
+        panOffset = Vec2D.Vec2, // パンのオフセット
+        zoom = Float32          // ズーム倍率
     }
 
     /// ビューワー全体の状態
     pub type alias State = {
-        /// ディレクトリ内の .scene.json パスリスト
-        sceneFiles = List[String],
-        /// 現在選択中のファイルインデックス
-        currentFileIndex = Int32,
-        /// 読み込んだシーンツリー
-        loadedScene = SceneTree.Node,
-        /// ツリーパネルの状態
-        treeState = TreeState,
-        /// キャンバスパネルの状態
-        canvasState = CanvasState,
-        /// 前フレームの押下キーセット（エッジ検出用）
-        prevKeys = Set[Engine.Key],
-        /// 前フレームのマウスボタン状態（エッジ検出用）
-        prevMousePressed = Bool
+        sceneFiles = List[String],      // ディレクトリ内の .scene.json パスリスト
+        currentFileIndex = Int32,       // 現在選択中のファイルインデックス
+        loadedScene = SceneTree.Node,   // 読み込んだシーンツリー
+        treeState = TreeState,          // ツリーパネルの状態
+        canvasState = CanvasState,      // キャンバスパネルの状態
+        prevKeys = Set[Engine.Key],     // 前フレームの押下キーセット（エッジ検出用）
+        prevMousePressed = Bool         // 前フレームのマウスボタン状態（エッジ検出用）
     }
 
     /// ツリーパネルの初期状態を生成する（ルートノードは展開済み）

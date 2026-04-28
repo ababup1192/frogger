@@ -30,10 +30,8 @@ mod TreePanel {
 
     /// ツリーの行情報
     type alias TreeRow = {
-        /// 表示用のノード
-        node = SceneTree.Node,
-        /// 行インデックス
-        rowIndex = Int32
+        node = SceneTree.Node, // 表示用のノード
+        rowIndex = Int32       // 行インデックス
     }
 
     /// ノードツリーを深さ優先で走査し、各行の Label ノードリストを生成する
