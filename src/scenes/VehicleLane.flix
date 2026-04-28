@@ -45,6 +45,10 @@ mod VehicleLane {
     pub def isVehicle(name: String): Bool =
         String.startsWith({prefix = "V"}, name)
 
+    /// プレイヤーの Hitbox と車両の衝突かどうかを判定する
+    pub def isVehicleCollision(hitboxName: String, areaName: String, bodyName: String): Bool =
+        areaName == hitboxName and isVehicle(bodyName)
+
     // ========================================================================
     // Wrap boundaries — one car width buffer beyond each screen edge
     // ========================================================================

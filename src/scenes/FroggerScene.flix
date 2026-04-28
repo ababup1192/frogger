@@ -247,8 +247,8 @@ mod FroggerScene {
             def bodyEntered(_name, _pos, _body, k) = k(())
             def areaEntered(name, _pos, body, k) =
                 let st = k(());
-                if (name == hitboxName and not isPlayerDead(st#scene) and
-                    VehicleLane.isVehicle(body#name))
+                if (VehicleLane.isVehicleCollision(hitboxName, name, body#name)
+                    and not isPlayerDead(st#scene))
                     triggerDeath(st)
                 else st
         };
