@@ -144,16 +144,15 @@ mod FroggerScene {
             case None => state
             case Some(pos) =>
                 if (not atTarget or not HomeSlot.isInHomeZone(pos#y)) state
-                else match HomeSlot.findSlotAtPosition(state#scene, pos#x, state#homeSlotsFilled) {
+                else match HomeSlot.findSlotAtPosition(state#scene, pos#x) {
                     case Some(slotIdx) =>
-                        let newFilled = Set.insert(slotIdx, state#homeSlotsFilled);
                         let filledScene = state#scene |> HomeSlot.fillSlot(slotIdx);
                         let respawnedScene = FroggerPlayer.respawn(filledScene);
-                        if (HomeSlot.allFilled(newFilled))
-                            {scene = respawnedScene, homeSlotsFilled = newFilled, won = true,
+                        if (HomeSlot.allFilled(HomeSlot.filledSlots(filledScene)))
+                            {scene = respawnedScene, won = true,
                              timeRemaining = Game.initialTimeRemaining() | state}
                         else
-                            {scene = respawnedScene, homeSlotsFilled = newFilled,
+                            {scene = respawnedScene,
                              timeRemaining = Game.initialTimeRemaining() | state}
                     case None =>
                         // Home zone but no valid slot — death (hit wall between slots)

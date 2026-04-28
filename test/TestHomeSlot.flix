@@ -82,40 +82,40 @@ def testNotInHomeZoneAtStart(): Unit \ Assert =
 def testFindSlotExactPosition(): Unit \ {Assert, Fs.FileRead} =
     // スロット0のX座標ちょうどにいるとき
     let scene = testHomeSlotsScene();
-    Assert.assertEq(expected = Some(0), HomeSlot.findSlotAtPosition(scene, 64.0f32, Set.empty()))
+    Assert.assertEq(expected = Some(0), HomeSlot.findSlotAtPosition(scene, 64.0f32))
 
 @Test
 def testFindSlotCenterSlot(): Unit \ {Assert, Fs.FileRead} =
     // スロット2(中央)のX座標
     let scene = testHomeSlotsScene();
-    Assert.assertEq(expected = Some(2), HomeSlot.findSlotAtPosition(scene, 384.0f32, Set.empty()))
+    Assert.assertEq(expected = Some(2), HomeSlot.findSlotAtPosition(scene, 384.0f32))
 
 @Test
 def testFindSlotWithTolerance(): Unit \ {Assert, Fs.FileRead} =
     // スロット0に近い位置（許容範囲内: |80-64| = 16 < 32）
     let scene = testHomeSlotsScene();
-    Assert.assertEq(expected = Some(0), HomeSlot.findSlotAtPosition(scene, 80.0f32, Set.empty()))
+    Assert.assertEq(expected = Some(0), HomeSlot.findSlotAtPosition(scene, 80.0f32))
 
 @Test
 def testFindSlotOutsideTolerance(): Unit \ {Assert, Fs.FileRead} =
     // どのスロットからも離れている（スロット0=64とスロット1=256の間）
     let scene = testHomeSlotsScene();
-    let result: Option[Int32] = HomeSlot.findSlotAtPosition(scene, 160.0f32, Set.empty());
+    let result: Option[Int32] = HomeSlot.findSlotAtPosition(scene, 160.0f32);
     Assert.assertTrue(Option.isEmpty(result))
 
 @Test
 def testFindSlotSkipsFilledSlot(): Unit \ {Assert, Fs.FileRead} =
     // スロット0が埋まっている → スロット0にはマッチしない
-    let scene = testHomeSlotsScene();
-    let result: Option[Int32] = HomeSlot.findSlotAtPosition(scene, 64.0f32, Set#{0});
+    let scene = testHomeSlotsScene() |> HomeSlot.fillSlot(0);
+    let result: Option[Int32] = HomeSlot.findSlotAtPosition(scene, 64.0f32);
     Assert.assertTrue(Option.isEmpty(result))
 
 @Test
 def testFindSlotDoesNotSkipUnfilledSlot(): Unit \ {Assert, Fs.FileRead} =
     // スロット1が埋まっていても、スロット0にはマッチする
-    let scene = testHomeSlotsScene();
+    let scene = testHomeSlotsScene() |> HomeSlot.fillSlot(1);
     Assert.assertEq(expected = Some(0),
-        HomeSlot.findSlotAtPosition(scene, 64.0f32, Set#{1}))
+        HomeSlot.findSlotAtPosition(scene, 64.0f32))
 
 // ========================================================================
 // Win Condition Tests

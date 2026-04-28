@@ -6,7 +6,6 @@ mod Game {
         gameOver        = Bool,
         prevKeys        = Set[Engine.Key],
         lives           = Int32,
-        homeSlotsFilled = Set[Int32],
         won             = Bool,
         timeRemaining   = Float32
     }
@@ -119,7 +118,7 @@ mod Game {
     pub def initGame(): GameState \ Fs.FileRead =
         let scene = FroggerScene.buildInitialScene();
         {scene = scene, gameOver = false, prevKeys = Set.empty(), lives = 3,
-         homeSlotsFilled = Set.empty(), won = false, timeRemaining = initialTimeRemaining()}
+         won = false, timeRemaining = initialTimeRemaining()}
 
     // ========================================================================
     // Game Loop

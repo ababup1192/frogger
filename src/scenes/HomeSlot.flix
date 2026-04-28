@@ -64,16 +64,29 @@ mod HomeSlot {
         playerY < homeZoneMaxY()
 
     // ========================================================================
+    // Filled Slots — derive from scene tree visibility
+    // ========================================================================
+
+    pub def filledSlots(scene: SceneTree.Node): Set[Int32] =
+        List.range(0, slotCount())
+            |> List.foldLeft((acc, i) ->
+                match SceneTree.findSpriteData(filledSpriteName(i), scene) {
+                    case Some(sd) => if (sd#visible) Set.insert(i, acc) else acc
+                    case None     => acc
+                }, Set.empty())
+
+    // ========================================================================
     // Slot Match — find which slot the player overlaps (AABB check)
     // ========================================================================
 
-    pub def findSlotAtPosition(scene: SceneTree.Node, playerX: Float32, filledSlots: Set[Int32]): Option[Int32] =
+    pub def findSlotAtPosition(scene: SceneTree.Node, playerX: Float32): Option[Int32] =
         let config = loadConfig(scene);
+        let filled = filledSlots(scene);
         let half = config#slotSize#x / 2.0f32;
         List.range(0, List.length(config#slotPositions))
             |> List.findMap(i ->
                 let sx = config#slotPositions |> List.nth(i) |> Option.getWithDefault(0.0f32);
-                if (Float32.abs(playerX - sx) < half and not Set.memberOf(i, filledSlots))
+                if (Float32.abs(playerX - sx) < half and not Set.memberOf(i, filled))
                     Some(i)
                 else None)
 
