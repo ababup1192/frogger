@@ -97,6 +97,9 @@ mod HomeSlot {
     pub def allFilled(filledSlots: Set[Int32]): Bool =
         Set.size(filledSlots) >= slotCount()
 
+    pub def isAllFilled(scene: SceneTree.Node): Bool =
+        allFilled(filledSlots(scene))
+
     // ========================================================================
     // Build all home slots from scene JSON
     // ========================================================================

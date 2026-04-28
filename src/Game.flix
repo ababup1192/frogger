@@ -3,10 +3,8 @@
 mod Game {
     pub type alias GameState = {
         scene           = SceneTree.Node,
-        gameOver        = Bool,
         prevKeys        = Set[Engine.Key],
         lives           = Int32,
-        won             = Bool,
         timeRemaining   = Float32
     }
 
@@ -117,17 +115,23 @@ mod Game {
 
     pub def initGame(): GameState \ Fs.FileRead =
         let scene = FroggerScene.buildInitialScene();
-        {scene = scene, gameOver = false, prevKeys = Set.empty(), lives = 3,
-         won = false, timeRemaining = initialTimeRemaining()}
+        {scene = scene, prevKeys = Set.empty(), lives = 3,
+         timeRemaining = initialTimeRemaining()}
 
     // ========================================================================
     // Game Loop
     // ========================================================================
 
+    pub def isWon(state: GameState): Bool =
+        HomeSlot.isAllFilled(state#scene)
+
+    pub def isGameOver(state: GameState): Bool =
+        state#lives <= 0 and not FroggerScene.isPlayerDead(state#scene)
+
     pub def updateGame(state: GameState): GameState \ {Engine.Game, Fs.FileRead} =
         let dt = Engine.Game.getDeltaTime();
         let currKeys = collectPressedKeys();
-        if (state#gameOver or state#won) {
+        if (isGameOver(state) or isWon(state)) {
             // Game ended — Enter to restart, otherwise just update prevKeys
             let justPressed = justPressedKeys(currKeys, state#prevKeys);
             if (Set.memberOf(Engine.Key.Enter, justPressed))
@@ -162,9 +166,9 @@ mod Game {
                 |> FroggerHUD.updateLives(timerState#lives)
                 |> FroggerHUD.updateTimer(timerState#timeRemaining);
             // End-game messages
-            let finalScene = if (timerState#gameOver)
+            let finalScene = if (isGameOver(timerState))
                 hudScene |> FroggerHUD.showMessage("You Lost!") |> FroggerHUD.showRestart
-            else if (timerState#won)
+            else if (isWon(timerState))
                 hudScene |> FroggerHUD.showMessage("You Won!") |> FroggerHUD.showRestart
             else hudScene;
             {scene = finalScene | timerState}
