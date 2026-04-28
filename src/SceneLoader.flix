@@ -45,6 +45,8 @@ mod SceneLoader {
             case "AnimatedSprite2D" => buildAnimatedSprite2D(p, name, map)
             case "Area2D"           => buildArea2D(p, name, map)
             case "RectShape2D"      => buildRectShape2D(p, name, map)
+            case "Node2D"           => buildNode2D(p, name, map)
+            case "Sprite2D"         => buildSprite2D(p, name, map)
             case unknown            => Err(JsonError(p, Set#{"known node type (got: ${unknown})"}))
         }
 
@@ -146,4 +148,28 @@ mod SceneLoader {
         forA (
             size <- parseVec2(p, "size", map)
         ) yield RectShape2D.init({name = name, size = size})
+
+    /// Node2D ノードを構築する（子ノードを持つ汎用コンテナ）
+    def buildNode2D(p: Path, name: String,
+                    map: Map[String, Json.JsonElement]): Result[Json.JsonError, SceneTree.Node] =
+        forA (
+            pos      <- parseVec2(p, "pos", map);
+            children <- parseChildren(p, map)
+        ) yield SceneTree.node2D(name, pos, children)
+
+    /// Sprite2D ノードを構築する（visible はオプション、デフォルト true）
+    def buildSprite2D(p: Path, name: String,
+                      map: Map[String, Json.JsonElement]): Result[Json.JsonError, SceneTree.Node] =
+        forA (
+            pos        <- parseVec2(p, "pos", map);
+            size       <- parseVec2(p, "size", map);
+            texture    <- Json.getAtKey(p, "texture", map);
+            visibleOpt <- (Json.getAtKeyOpt(p, "visible", map): Result[Json.JsonError, Option[Bool]])
+        ) yield {
+            let node = Sprite2D.init({name = name, pos = pos, size = size, texture = texture});
+            match visibleOpt {
+                case Some(v) => node |> Sprite2D.visible(v)
+                case None    => node
+            }
+        }
 }

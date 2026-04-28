@@ -1,6 +1,47 @@
 // Tests for HomeSlot — slot positions, scene structure, slot matching, win condition
 
 // ========================================================================
+// Test Helper — HomeSlots を含むシーン
+// ========================================================================
+
+def testHomeSlotsScene(): SceneTree.Node \ Fs.FileRead =
+    SceneTree.node2D("Root", Vec2D.zero(), HomeSlot.buildHomeSlots() :: Nil)
+
+// ========================================================================
+// loadConfig — JSON構築 + Config抽出の一括検証
+// ========================================================================
+
+@Test
+def testLoadConfig(): Unit \ {Assert, Fs.FileRead} =
+    // buildHomeSlots → loadConfig で全パラメータを一括検証する
+    //
+    //   HomeSlots (Node2D, pos=0,0)
+    //   ├── HS0 (Node2D, pos=64,0)
+    //   │   ├── HSEmpty0  (Sprite2D, "Home",     visible=true)
+    //   │   └── HSFilled0 (Sprite2D, "HomeFrog", visible=false)
+    //   ├── HS1 (Node2D, pos=256,0)
+    //   │   ├── HSEmpty1  ...
+    //   │   └── HSFilled1 ...
+    //   ... (HS2〜HS4 も同構造)
+    //
+    let scene = testHomeSlotsScene();
+    let config = HomeSlot.loadConfig(scene);
+    // スロット数
+    Assert.assertEq(expected = 5,
+        config#slotPositions |> List.length);
+    // 各スロットのX座標
+    Assert.assertEq(expected = 64.0f32 :: 256.0f32 :: 384.0f32 :: 512.0f32 :: 704.0f32 :: Nil,
+        config#slotPositions);
+    // スプライトサイズ 64x64
+    Assert.assertEq(expected = (64.0f32, 64.0f32),
+        (config#slotSize#x, config#slotSize#y));
+    // テクスチャ名
+    Assert.assertEq(expected = "Home", config#emptyTexture);
+    Assert.assertEq(expected = "HomeFrog", config#filledTexture);
+    // 埋まったスロットは初期状態で非表示
+    Assert.assertFalse(config#filledVisible)
+
+// ========================================================================
 // Slot Configuration Tests
 // ========================================================================
 
@@ -8,34 +49,6 @@
 def testSlotCount(): Unit \ Assert =
     // ホームスロットは5箇所
     Assert.assertEq(expected = 5, HomeSlot.slotCount())
-
-@Test
-def testSlotPositionCount(): Unit \ Assert =
-    // slotPositions のリスト長が slotCount と一致する
-    Assert.assertEq(expected = HomeSlot.slotCount(),
-        HomeSlot.slotPositions() |> List.length)
-
-@Test
-def testSlotPositionsValues(): Unit \ Assert =
-    // 各スロットのX座標（64pxグリッドに配置）
-    //   [H]       [H]     [H]     [H]       [H]
-    //   x=64     x=256   x=384   x=512     x=704
-    Assert.assertEq(
-        expected = 64.0f32 :: 256.0f32 :: 384.0f32 :: 512.0f32 :: 704.0f32 :: Nil,
-        HomeSlot.slotPositions())
-
-@Test
-def testSlotX0(): Unit \ Assert =
-    Assert.assertEq(expected = 64.0f32, HomeSlot.slotX(0))
-
-@Test
-def testSlotX2Center(): Unit \ Assert =
-    // スロット2はボード中央
-    Assert.assertEq(expected = 384.0f32, HomeSlot.slotX(2))
-
-@Test
-def testSlotX4(): Unit \ Assert =
-    Assert.assertEq(expected = 704.0f32, HomeSlot.slotX(4))
 
 // ========================================================================
 // Home Zone Detection Tests
@@ -66,37 +79,43 @@ def testNotInHomeZoneAtStart(): Unit \ Assert =
 // ========================================================================
 
 @Test
-def testFindSlotExactPosition(): Unit \ Assert =
+def testFindSlotExactPosition(): Unit \ {Assert, Fs.FileRead} =
     // スロット0のX座標ちょうどにいるとき
-    Assert.assertEq(expected = Some(0), HomeSlot.findSlotAtPosition(64.0f32, Set.empty()))
+    let scene = testHomeSlotsScene();
+    Assert.assertEq(expected = Some(0), HomeSlot.findSlotAtPosition(scene, 64.0f32, Set.empty()))
 
 @Test
-def testFindSlotCenterSlot(): Unit \ Assert =
+def testFindSlotCenterSlot(): Unit \ {Assert, Fs.FileRead} =
     // スロット2(中央)のX座標
-    Assert.assertEq(expected = Some(2), HomeSlot.findSlotAtPosition(384.0f32, Set.empty()))
+    let scene = testHomeSlotsScene();
+    Assert.assertEq(expected = Some(2), HomeSlot.findSlotAtPosition(scene, 384.0f32, Set.empty()))
 
 @Test
-def testFindSlotWithTolerance(): Unit \ Assert =
+def testFindSlotWithTolerance(): Unit \ {Assert, Fs.FileRead} =
     // スロット0に近い位置（許容範囲内: |80-64| = 16 < 32）
-    Assert.assertEq(expected = Some(0), HomeSlot.findSlotAtPosition(80.0f32, Set.empty()))
+    let scene = testHomeSlotsScene();
+    Assert.assertEq(expected = Some(0), HomeSlot.findSlotAtPosition(scene, 80.0f32, Set.empty()))
 
 @Test
-def testFindSlotOutsideTolerance(): Unit \ Assert =
+def testFindSlotOutsideTolerance(): Unit \ {Assert, Fs.FileRead} =
     // どのスロットからも離れている（スロット0=64とスロット1=256の間）
-    let result: Option[Int32] = HomeSlot.findSlotAtPosition(160.0f32, Set.empty());
+    let scene = testHomeSlotsScene();
+    let result: Option[Int32] = HomeSlot.findSlotAtPosition(scene, 160.0f32, Set.empty());
     Assert.assertTrue(Option.isEmpty(result))
 
 @Test
-def testFindSlotSkipsFilledSlot(): Unit \ Assert =
+def testFindSlotSkipsFilledSlot(): Unit \ {Assert, Fs.FileRead} =
     // スロット0が埋まっている → スロット0にはマッチしない
-    let result: Option[Int32] = HomeSlot.findSlotAtPosition(64.0f32, Set#{0});
+    let scene = testHomeSlotsScene();
+    let result: Option[Int32] = HomeSlot.findSlotAtPosition(scene, 64.0f32, Set#{0});
     Assert.assertTrue(Option.isEmpty(result))
 
 @Test
-def testFindSlotDoesNotSkipUnfilledSlot(): Unit \ Assert =
+def testFindSlotDoesNotSkipUnfilledSlot(): Unit \ {Assert, Fs.FileRead} =
     // スロット1が埋まっていても、スロット0にはマッチする
+    let scene = testHomeSlotsScene();
     Assert.assertEq(expected = Some(0),
-        HomeSlot.findSlotAtPosition(64.0f32, Set#{1}))
+        HomeSlot.findSlotAtPosition(scene, 64.0f32, Set#{1}))
 
 // ========================================================================
 // Win Condition Tests
@@ -114,71 +133,15 @@ def testNotAllFilled3(): Unit \ Assert =
 
 @Test
 def testAllFilled5(): Unit \ Assert =
-    // 5個全部埋まり ��� 勝利
+    // 5個全部埋まり → 勝利
     Assert.assertTrue(HomeSlot.allFilled(Set#{0, 1, 2, 3, 4}))
-
-// ========================================================================
-// Scene Build Tests
-// ========================================================================
-
-@Test
-def testHomeSlotsContainerName(): Unit \ Assert =
-    Assert.assertEq(expected = "HomeSlots",
-        HomeSlot.buildHomeSlots() |> SceneTree.nodeName)
-
-@Test
-def testHomeSlotsHas5Children(): Unit \ Assert =
-    // コンテナ直下に5つのスロットノード
-    Assert.assertEq(expected = 5,
-        HomeSlot.buildHomeSlots() |> SceneTree.nodeChildren |> List.length)
-
-@Test
-def testSlotNodeNames(): Unit \ Assert =
-    // 各スロットの名前が HS0 ~ HS4
-    let names = HomeSlot.buildHomeSlots()
-        |> SceneTree.nodeChildren
-        |> List.map(SceneTree.nodeName);
-    Assert.assertEq(
-        expected = "HS0" :: "HS1" :: "HS2" :: "HS3" :: "HS4" :: Nil,
-        names)
-
-@Test
-def testSlotNodePositions(): Unit \ Assert =
-    // 各スロットのX座標
-    let xs = HomeSlot.buildHomeSlots()
-        |> SceneTree.nodeChildren
-        |> List.map(n -> SceneTree.nodePosition(n)#x);
-    Assert.assertEq(
-        expected = 64.0f32 :: 256.0f32 :: 384.0f32 :: 512.0f32 :: 704.0f32 :: Nil,
-        xs)
-
-@Test
-def testSlotHasTwoSprites(): Unit \ Assert =
-    // 各スロットはEmptySpriteとFilledSpriteの2つの子を持つ
-    match SceneTree.findNode("HS0", HomeSlot.buildHomeSlots()) {
-        case Some(slot) => Assert.assertEq(expected = 2,
-            SceneTree.nodeChildren(slot) |> List.length)
-        case None => bug!("HS0 not found")
-    }
-
-@Test
-def testSlotEmptySpriteTexture(): Unit \ Assert =
-    // EmptySprite のテクスチャは "Home"
-    match SceneTree.findNode("HSEmpty0", HomeSlot.buildHomeSlots()) {
-        case Some(sprite) => match SceneTree.nodeKind(sprite) {
-            case SceneTree.NodeKind.Sprite(sd) =>
-                Assert.assertEq(expected = "Home", sd#texture)
-            case _ => bug!("HSEmpty0 should be Sprite")
-        }
-        case None => bug!("HSEmpty0 not found")
-    }
 
 // ========================================================================
 // Fill Slot Tests
 // ========================================================================
 
 @Test
-def testFillSlotMakesFilledSpriteVisible(): Unit \ Assert =
+def testFillSlotMakesFilledSpriteVisible(): Unit \ {Assert, Fs.FileRead} =
     // fillSlot でスロットを埋めると、FilledSprite が visible になる
     let scene = SceneTree.node2D("Root", Vec2D.zero(),
         HomeSlot.buildHomeSlots() :: Nil);
@@ -193,7 +156,7 @@ def testFillSlotMakesFilledSpriteVisible(): Unit \ Assert =
     }
 
 @Test
-def testFillSlotHidesEmptySprite(): Unit \ Assert =
+def testFillSlotHidesEmptySprite(): Unit \ {Assert, Fs.FileRead} =
     // fillSlot でスロットを埋めると、EmptySprite が非表示になる
     let scene = SceneTree.node2D("Root", Vec2D.zero(),
         HomeSlot.buildHomeSlots() :: Nil);
@@ -208,7 +171,7 @@ def testFillSlotHidesEmptySprite(): Unit \ Assert =
     }
 
 @Test
-def testUnfilledSlotSpriteNotVisible(): Unit \ Assert =
+def testUnfilledSlotSpriteNotVisible(): Unit \ {Assert, Fs.FileRead} =
     // 初期状態では FilledSprite は非表示
     match SceneTree.findNode("HSFilled0", HomeSlot.buildHomeSlots()) {
         case Some(sprite) => match SceneTree.nodeKind(sprite) {

@@ -144,7 +144,7 @@ mod FroggerScene {
             case None => state
             case Some(pos) =>
                 if (not atTarget or not HomeSlot.isInHomeZone(pos#y)) state
-                else match HomeSlot.findSlotAtPosition(pos#x, state#homeSlotsFilled) {
+                else match HomeSlot.findSlotAtPosition(state#scene, pos#x, state#homeSlotsFilled) {
                     case Some(slotIdx) =>
                         let newFilled = Set.insert(slotIdx, state#homeSlotsFilled);
                         let filledScene = state#scene |> HomeSlot.fillSlot(slotIdx);

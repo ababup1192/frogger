@@ -498,6 +498,17 @@ mod SceneTree {
     pub def findAnimatedSpriteData(name: String, root: Node): Option[AnimatedSpriteData] =
         findNode(name, root) |> Option.flatMap(animatedSpriteData)
 
+    /// ノードが Sprite2D であればその SpriteData を返す
+    pub def spriteData(node: Node): Option[SpriteData] =
+        match nodeKind(node) {
+            case NodeKind.Sprite(sd) => Some(sd)
+            case _ => None
+        }
+
+    /// 名前でノードを検索し、Sprite2D であれば SpriteData を返す
+    pub def findSpriteData(name: String, root: Node): Option[SpriteData] =
+        findNode(name, root) |> Option.flatMap(spriteData)
+
     pub def findRectShape(children: List[Node]): Option[Vec2D.Vec2] =
         List.findMap(child -> match nodeKind(child) {
             case NodeKind.Shape(CollisionShapeData.RectShape(size)) => Some(size)

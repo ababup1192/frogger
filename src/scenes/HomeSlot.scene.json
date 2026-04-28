@@ -1,0 +1,117 @@
+{
+  "type": "Node2D",
+  "name": "HomeSlots",
+  "pos": [0, 0],
+  "children": [
+    {
+      "type": "Node2D",
+      "name": "HS0",
+      "pos": [64, 0],
+      "children": [
+        {
+          "type": "Sprite2D",
+          "name": "HSEmpty0",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "Home"
+        },
+        {
+          "type": "Sprite2D",
+          "name": "HSFilled0",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "HomeFrog",
+          "visible": false
+        }
+      ]
+    },
+    {
+      "type": "Node2D",
+      "name": "HS1",
+      "pos": [256, 0],
+      "children": [
+        {
+          "type": "Sprite2D",
+          "name": "HSEmpty1",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "Home"
+        },
+        {
+          "type": "Sprite2D",
+          "name": "HSFilled1",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "HomeFrog",
+          "visible": false
+        }
+      ]
+    },
+    {
+      "type": "Node2D",
+      "name": "HS2",
+      "pos": [384, 0],
+      "children": [
+        {
+          "type": "Sprite2D",
+          "name": "HSEmpty2",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "Home"
+        },
+        {
+          "type": "Sprite2D",
+          "name": "HSFilled2",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "HomeFrog",
+          "visible": false
+        }
+      ]
+    },
+    {
+      "type": "Node2D",
+      "name": "HS3",
+      "pos": [512, 0],
+      "children": [
+        {
+          "type": "Sprite2D",
+          "name": "HSEmpty3",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "Home"
+        },
+        {
+          "type": "Sprite2D",
+          "name": "HSFilled3",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "HomeFrog",
+          "visible": false
+        }
+      ]
+    },
+    {
+      "type": "Node2D",
+      "name": "HS4",
+      "pos": [704, 0],
+      "children": [
+        {
+          "type": "Sprite2D",
+          "name": "HSEmpty4",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "Home"
+        },
+        {
+          "type": "Sprite2D",
+          "name": "HSFilled4",
+          "pos": [0, 0],
+          "size": [64, 64],
+          "texture": "HomeFrog",
+          "visible": false
+        }
+      ]
+    }
+  ]
+}
