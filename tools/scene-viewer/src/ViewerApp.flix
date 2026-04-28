@@ -32,7 +32,7 @@ mod ViewerApp {
     def collectPressedKeys(): Set[Engine.Key] \ Engine.Game =
         let keys = Engine.Key.Tab :: Engine.Key.R :: Engine.Key.F :: Engine.Key.D ::
                    Engine.Key.Up :: Engine.Key.Down :: Engine.Key.Left :: Engine.Key.Right ::
-                   Engine.Key.Equal :: Engine.Key.Minus ::
+                   Engine.Key.Equal :: Engine.Key.Minus :: Engine.Key.Semicolon ::
                    Engine.Key.LeftShift :: Engine.Key.RightShift :: Nil;
         List.foldLeft((acc, key) ->
             if (Engine.Game.isKeyPressed(key)) Set.insert(key, acc) else acc,
@@ -82,8 +82,11 @@ mod ViewerApp {
             else afterSwitch
         };
         // ズーム操作（+: ズームイン / -: ズームアウト）— キャンバス中心を基準にズーム
+        // Equal = US配列の +/= キー、Shift+Semicolon = JIS配列の + キー
+        let zoomInPressed = Set.memberOf(Engine.Key.Equal, jp) or
+            (Set.memberOf(Engine.Key.Semicolon, jp) and isShiftHeld(currKeys));
         let afterZoom =
-            if (Set.memberOf(Engine.Key.Equal, jp)) {
+            if (zoomInPressed) {
                 let newZoom = Float32.min(4.0f32, afterPan#canvasState#zoom + 0.25f32);
                 {canvasState = CanvasPanel.zoomAtCenter(newZoom, afterPan#canvasState) | afterPan}
             } else if (Set.memberOf(Engine.Key.Minus, jp)) {

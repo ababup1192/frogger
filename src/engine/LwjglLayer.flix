@@ -158,6 +158,7 @@ mod LwjglLayer {
         case Engine.Key.PageDown   => 267
         case Engine.Key.Minus      => 45
         case Engine.Key.Equal      => 61
+        case Engine.Key.Semicolon  => 59
         case Engine.Key.Comma      => 44
         case Engine.Key.Period     => 46
     }

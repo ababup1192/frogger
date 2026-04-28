@@ -115,6 +115,7 @@ mod Engine {
 
         case Minus
         case Equal
+        case Semicolon
         case Comma
         case Period
     }
